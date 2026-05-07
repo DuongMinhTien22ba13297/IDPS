@@ -1,0 +1,6 @@
+{
+    "description": "Confidence thresholds for autonomous decision engine",
+    "auto_block_threshold": 0.5,
+    "alert_threshold": 0.35,
+    "whitelist_alert_threshold": 0.85
+}

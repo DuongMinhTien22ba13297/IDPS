@@ -1,0 +1,13 @@
+{
+    "description": "IP Whitelist - Trusted IPs (admin, gateway, internal services). IPs here will NOT be blocked by iptables, but ML inference still runs for anomaly monitoring.",
+    "ips": [
+        "192.168.226.1",
+        "192.168.226.15",
+	"192.168.225.151",
+	"172.16.1.1",
+	"172.16.1.2",
+        "127.0.0.1",
+	"fe80::20c:29ff:fecc:4bbb",
+	"fe80::20c:29ff:fee3:d92"
+    ]
+}

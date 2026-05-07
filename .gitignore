@@ -1,0 +1,17 @@
+# Logs
+logs/
+docker/logs/
+
+# Data & Datasets
+datasets/
+docker/grafana/data/
+docker/loki/data/
+
+# Python environment
+__pycache__/
+*.pyc
+
+# Miscellaneous data
+*.pcap
+*.csv
+
