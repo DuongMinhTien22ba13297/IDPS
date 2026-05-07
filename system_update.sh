@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # 1. Sửa nội dung file blacklist.json
-# Đường dẫn file (Bạn hãy thay đổi /path/to/ cho đúng với vị trí thực tế của file)
 JSON_FILE="/home/dmtien/IDPS/configs/blacklist.json"
 
 cat <<EOF > "$JSON_FILE"
