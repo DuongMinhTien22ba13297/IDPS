@@ -20,7 +20,17 @@ else
     echo "Không có luật nào trong chuỗi INPUT để xóa (iptables đang trống)"
 fi
 
-# 3. Khởi động lại các container
+# 3. Làm mới dữ liệu Loki
+LOKI_DATA_DIR="/home/dmtien/IDPS/docker/logs/loki-data"
+echo "Đang làm mới dữ liệu Loki tại $LOKI_DATA_DIR..."
+if [ -d "$LOKI_DATA_DIR" ]; then
+    sudo rm -rf "$LOKI_DATA_DIR"/*
+    echo "Đã xóa dữ liệu cũ của Loki."
+else
+    echo "Thư mục $LOKI_DATA_DIR không tồn tại, sẽ được Loki tự động tạo khi khởi động."
+fi
+
+# 4. Khởi động lại các container
 echo "Khởi động lại các container..."
 cd /home/dmtien/IDPS/docker && docker compose restart
 echo "Đã khởi động lại các container"
