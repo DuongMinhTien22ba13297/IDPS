@@ -97,7 +97,7 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "count_over_time({application=\"idps-autodefense\"} [1m])",
+          "expr": "count_over_time({application=\"idps-autodefense\", src_ip=~\"$src_ip\"} [1m])",
           "queryType": "range",
           "refId": "A"
         }
@@ -133,7 +133,7 @@
             "type": "loki",
             "uid": "loki_ds"
           },
-          "expr": "{application=\"idps-autodefense\"}",
+          "expr": "{application=\"idps-autodefense\", src_ip=~\"$src_ip\"}",
           "refId": "A"
         }
       ],
@@ -170,7 +170,7 @@
       "id": 3,
       "options": {
         "displayLabels": [
-          "dst_port"
+          "src_ip"
         ],
         "legend": {
           "displayMode": "list",
@@ -197,12 +197,12 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "sum by (dst_port) (count_over_time({application=\"idps-autodefense\"} [1h]))",
+          "expr": "topk(10, sum by (src_ip) (count_over_time({application=\"idps-autodefense\"} [5m])))",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Top Destination Ports",
+      "title": "Top Source IPs",
       "type": "piechart"
     },
     {
@@ -233,12 +233,170 @@
             "type": "loki",
             "uid": "loki_ds"
           },
-          "expr": "{application=\"idps-autodefense\"} != \"BENIGN\" != \"[STATS]\"",
+          "expr": "{application=\"idps-autodefense\", src_ip=~\"$src_ip\"} |~ \"AUTO_BLOCKED|SUSPICIOUS|BLACKLISTED|ERROR|WARNING\"",
           "refId": "A"
         }
       ],
       "title": "Threat Logs (Non-Benign)",
       "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki_ds"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "text": {
+          "valueSize": 12
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.BENIGN\" | unwrap v [$__interval])",
+          "legendFormat": "BENIGN",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Botnet\" | unwrap v [$__interval])",
+          "legendFormat": "Botnet",
+          "queryType": "range",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Brute_Force\" | unwrap v [$__interval])",
+          "legendFormat": "Brute Force",
+          "queryType": "range",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.DoS_DDoS\" | unwrap v [$__interval])",
+          "legendFormat": "DoS/DDoS",
+          "queryType": "range",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Exploitation___Rare\" | unwrap v [$__interval])",
+          "legendFormat": "Exploitation / Rare",
+          "queryType": "range",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.PortScan\" | unwrap v [$__interval])",
+          "legendFormat": "PortScan",
+          "queryType": "range",
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki_ds"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Web_Attack\" | unwrap v [$__interval])",
+          "legendFormat": "Web Attack",
+          "queryType": "range",
+          "refId": "G"
+        }
+      ],
+      "title": "ML Multi-Class Probabilities",
+      "type": "barchart"
     }
   ],
   "refresh": "5s",
@@ -246,7 +404,33 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki_ds"
+        },
+        "definition": "label_values(src_ip)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Source IP",
+        "multi": false,
+        "name": "src_ip",
+        "options": [],
+        "query": "label_values(src_ip)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-15m",

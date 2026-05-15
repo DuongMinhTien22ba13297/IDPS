@@ -3,9 +3,11 @@
 =============================================================================
 Module: suricata_correlator.py
 Chức năng: Correlation Engine giữa Suricata Alerts và ML Predictions.
-         - Đọc Suricata EVE JSON alerts theo thời gian thực
-         - Correlate với NFStream flows và ML predictions
-         - Tăng/giảm risk score dựa trên correlation
+Input: File Suricata EVE JSON (eve.json) và thông tin ML predictions.
+Output: Điểm rủi ro (risk score) và chi tiết mức độ tương quan (correlation details).
+Ngày tạo: N/A
+Ngày sửa: 2026-05-13
+Lí do sửa: Cải thiện logic đọc file, xử lý log rotation, xoá biến thừa, hoàn thiện header.
 =============================================================================
 """
 
@@ -38,12 +40,14 @@ class SuricataAlert:
         self.severity = alert_data.get("alert", {}).get("severity", 0)
         self.action = alert_data.get("alert", {}).get("action", "")
 
-    def _parse_timestamp(self, ts_str: str) -> datetime:
+    def _parse_timestamp(self, ts_str: str) -> Optional[datetime]:
         """Parse timestamp từ Suricata format."""
+        if not ts_str:
+            return None
         try:
             return datetime.fromisoformat(ts_str.replace("+0000", "+00:00"))
         except (ValueError, AttributeError):
-            return datetime.now()
+            return None
 
     def to_dict(self) -> dict:
         return {
@@ -153,6 +157,7 @@ class SuricataCorrelator:
     def _read_alerts_loop(self):
         """Background loop để đọc Suricata EVE JSON."""
         last_position = 0
+        last_inode = None
 
         while self._running:
             try:
@@ -160,24 +165,31 @@ class SuricataCorrelator:
                     time.sleep(1)
                     continue
 
+                # Kiểm tra log rotation dựa vào inode hoặc kích thước file
+                current_inode = self.eve_json_path.stat().st_ino
+                current_size = self.eve_json_path.stat().st_size
+
+                if (last_inode is not None and current_inode != last_inode) or (current_size < last_position):
+                    logger.info("Phát hiện Suricata log rotation hoặc file bị thu nhỏ, reset file pointer.")
+                    last_position = 0
+                last_inode = current_inode
+
                 # Đọc file từ vị trí cuối cùng
                 with open(self.eve_json_path, "r", encoding="utf-8", errors="ignore") as f:
                     f.seek(last_position)
-                    new_content = f.read()
+                    
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            alert_data = json.loads(line)
+                            if alert_data.get("event_type") == "alert":
+                                self._add_alert(alert_data)
+                        except json.JSONDecodeError:
+                            logger.debug("Bỏ qua lỗi JSONDecodeError khi parse line từ Suricata.")
+                            continue
 
-                    if new_content:
-                        # Parse từng dòng JSON
-                        for line in new_content.strip().split("\n"):
-                            if not line.strip():
-                                continue
-                            try:
-                                alert_data = json.loads(line)
-                                if alert_data.get("event_type") == "alert":
-                                    self._add_alert(alert_data)
-                            except json.JSONDecodeError:
-                                continue
-
-                        last_position = f.tell()
+                    last_position = f.tell()
 
                 # Cleanup expired alerts
                 self._cleanup_expired_alerts()
@@ -191,6 +203,8 @@ class SuricataCorrelator:
     def _add_alert(self, alert_data: dict):
         """Thêm alert vào cache."""
         alert = SuricataAlert(alert_data)
+        if alert.timestamp is None:
+            return  # Bỏ qua nếu không parse được timestamp
 
         with self._lock:
             self._alerts_by_ip[alert.src_ip].append(alert)
@@ -258,7 +272,6 @@ class SuricataCorrelator:
                 correlation_score += 0.05
 
             # Check 2: Same attack type (confirmation)
-            ml_attack_lower = ml_attack_type.lower()
             matched_signatures = []
 
             for alert in alerts:

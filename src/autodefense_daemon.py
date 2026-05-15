@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-Module: autodefense_daemon.py
-Chức năng: Core daemon của Zero-Touch IDPS (chạy trong container autodefense).
-         Pipeline Event-Driven:
-           Bước 1: NFStream bắt flow → lấy src_ip
-           Bước 2: Check Blacklist (Early Drop → iptables DROP, skip ML)
-           Bước 3: Check Whitelist (Phương án B: vẫn chạy ML, KHÔNG block,
-                   chỉ sinh CRITICAL_ALERT nếu phát hiện anomaly)
-           Bước 4: Feature Extraction + ML Inference (Binary + Multiclass)
-           Bước 5: Autonomous Decision (score > threshold → AUTO_BLOCK + thêm Blacklist)
+Tên file   : autodefense_daemon.py
+Mục tiêu   : Core Daemon xử lý sự kiện thời gian thực của hệ thống Zero-Touch IDPS.
+             Thực hiện pipeline từ bắt luồng mạng đến ra quyết định chặn tấn công tự động.
+Input      :
+  - Traffic trực tiếp từ interface mạng (mặc định: ens33).
+  - Các cấu hình từ biến môi trường (LOKI_URL, IFACE, MODELS_DIR, CONFIG_DIR).
+Output     :
+  - Hành động phòng vệ (iptables DROP).
+  - Log sự kiện cấu trúc (JSON) gửi tới Grafana/Loki và file action_audit.log.
+  - Log hoạt động hệ thống vào autodefense.log.
+Quy trình  :
+  1. Khởi tạo: Load mô hình ML, IPManager (Blacklist/Whitelist), và AutoFirewall.
+  2. Capture: Sử dụng NFStreamer để bắt các luồng mạng (flows).
+  3. Pipeline xử lý từng flow:
+     - Check Blacklist: Nếu đã bị chặn thì tiếp tục chặn (re-enforce) và skip ML.
+     - Check Whitelist: Nếu nằm trong danh sách trắng thì bỏ qua (skip ML).
+     - ML Inference: Trích xuất đặc trưng và dự đoán qua 2 tầng XGBoost (Binary & Multi-class).
+     - Decision: Nếu score > threshold thì thực hiện Auto-Block và ghi log sự kiện.
 =============================================================================
 """
 
@@ -20,7 +29,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from realtime_extractor import create_streamer, extract_features
+from realtime_extractor import create_streamer, extract_features, ConnectionTracker
 from threat_evaluator import ThreatEvaluator
 from auto_firewall import AutoFirewall
 from ip_manager import IPManager
@@ -65,6 +74,10 @@ def process_flow(flow, ip_mgr: IPManager, evaluator: ThreatEvaluator,
     Blacklist → Whitelist (ML monitor) → ML Inference → Auto-Block
     """
     src_ip = flow.src_ip
+    # Bỏ qua IPv6 và các IP rác (chỉ xử lý IPv4)
+    if ":" in src_ip or src_ip == "0.0.0.0":
+        return
+
     flow_start = time.time()
 
     # -----------------------------------------------------------------
@@ -170,10 +183,35 @@ def process_flow(flow, ip_mgr: IPManager, evaluator: ThreatEvaluator,
             }}
         )
 
+    # Ghi log JSON xác suất (ẩn khỏi text log thường, chỉ dùng cho Grafana)
+    if "class_probabilities" in result and result["class_probabilities"]:
+        _log_probabilities(src_ip, flow.dst_port, result["class_probabilities"])
+
 
 # =============================================================================
 #  STRUCTURED EVENT LOG (cho Grafana / Loki)
 # =============================================================================
+
+def _log_probabilities(src_ip: str, dst_port: int, probs: dict):
+    """
+    Ghi log chuyên biệt chứa các xác suất từ mô hình Multi-class,
+    giúp Grafana dễ dàng bóc tách JSON và tạo Panel.
+    """
+    event = {
+        "event_type": "ml_probs",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "src_ip": src_ip,
+        "dst_port": dst_port,
+        "probs": probs
+    }
+    logger.info(
+        json.dumps(event, ensure_ascii=False),
+        extra={"tags": {
+            "application": "idps-autodefense",
+            "log_type": "ml_probs",
+            "src_ip": src_ip
+        }}
+    )
 
 def _log_event(src_ip: str, dst_port: int, confidence: float,
                attack_type: str, action: str, response_time_ms: float):
@@ -216,7 +254,6 @@ def main():
     models_dir = os.getenv("MODELS_DIR", "/app/models")
     config_dir = os.getenv("CONFIG_DIR", "/app/configs")
 
-    logger.info("  ZERO-TOUCH IDPS — AUTODEFENSE DAEMON")
     logger.info(f"Interface: {interface}")
     logger.info(f"Models dir: {models_dir}")
     logger.info(f"Config dir: {config_dir}")
@@ -239,12 +276,13 @@ def main():
     firewall = AutoFirewall()
     logger.info(f"AutoFirewall: {firewall}")
 
-    logger.info("Tất cả modules đã sẵn sàng")
+    logger.info("Tất cả modules đã sẵn sàng!")
 
     # ---- Khởi tạo NFStreamer ----
     logger.info(f"Khởi động NFStreamer trên interface: {interface}")
     try:
-        streamer = create_streamer(interface=interface)
+        tracker = ConnectionTracker(window_sec=10)
+        streamer = create_streamer(interface=interface, conn_tracker=tracker)
         logger.info("NFStreamer đã sẵn sàng. Đang chờ luồng traffic...")
         logger.info("Pipeline: Blacklist → Whitelist(ML) → ML Inference → Auto-Block")
 

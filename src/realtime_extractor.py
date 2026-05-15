@@ -1,12 +1,66 @@
+"""
+=============================================================================
+Tên file   : realtime_extractor.py
+Mục tiêu   : Trích xuất đặc trưng mạng thời gian thực từ traffic sống hoặc file PCAP.
+             Chuyển đổi dữ liệu thô từ NFStream sang định dạng 30 đặc trưng tương thích 
+             với mô hình huấn luyện trên bộ dữ liệu CIC-IDS-2017.
+Input      :
+  - interface : Tên card mạng để lắng nghe (mặc định: ens33).
+  - flow      : Luồng mạng (flow object) được cung cấp bởi NFStreamer.
+Output     :
+  - np.ndarray : Vector chứa 30 đặc trưng đã được chuẩn hóa đơn vị (ms sang µs).
+Quy trình  :
+  1. Cấu hình Plugins: Sử dụng TCPWindowPlugin để lấy Init_Win_bytes 
+     (đặc trưng nâng cao mà NFStream mặc định không có).
+  2. Create Streamer: Khởi tạo bộ bắt gói tin với các tham số timeout (idle, active).
+  3. Mapping: Chuyển đổi các thuộc tính của flow (số gói tin, độ dài, thời gian IAT, 
+     cờ TCP...) thành vector 30 chiều theo đúng thứ tự A-Z đã dùng khi huấn luyện.
+Ngày tạo   : 2026-05-01
+Ngày sửa   : 2026-05-09
+Lí do sửa  : Thay thế 7 features không đóng góp (Idle Max/Mean/Min, Bwd IAT Std,
+             Bwd Mean Segment Size, Fwd Mean IAT, Fwd IAT Min) bằng 7 features
+             mới giúp phân biệt Web Attack, Brute Force, PortScan tốt hơn:
+             SYN/FIN/RST/PSH Flag Count, Total Fwd/Bwd Packets, Fwd Packet Length Min.
+             Xóa IdleStatsPlugin (không cần nữa).
+=============================================================================
+"""
 from nfstream import NFStreamer, NFPlugin
 import numpy as np
+import time
 
-# Custom plugin cho features NFStream không có sẵn
+class ConnectionTracker:
+    def __init__(self, window_sec=10):
+        self.window_sec = window_sec
+        # dict: src_ip -> {dst_port: [timestamp1, timestamp2, ...]}
+        self.history = {}
+
+    def add_and_count(self, src_ip, dst_port, current_time_sec):
+        if src_ip not in self.history:
+            self.history[src_ip] = {}
+        if dst_port not in self.history[src_ip]:
+            self.history[src_ip][dst_port] = []
+            
+        timestamps = self.history[src_ip][dst_port]
+        timestamps.append(current_time_sec)
+        
+        # Lọc các timestamp cũ hơn window_sec
+        cutoff = current_time_sec - self.window_sec
+        valid_timestamps = [ts for ts in timestamps if ts > cutoff]
+        self.history[src_ip][dst_port] = valid_timestamps
+        
+        return len(valid_timestamps)
+
+class ConnectionRatePlugin(NFPlugin):
+    def on_init(self, packet, flow):
+        # packet.time is in milliseconds
+        current_time_sec = packet.time / 1000.0
+        flow.udps.conn_rate = self.tracker.add_and_count(flow.src_ip, flow.dst_port, current_time_sec)
+
+# Custom plugin cho TCP Window Size (Init_Win_bytes_forward/backward)
 class TCPWindowPlugin(NFPlugin):
     def on_init(self, packet, flow):
         flow.udps.init_win_fwd = 0
         flow.udps.init_win_bwd = 0
-        flow.udps.ack_flag_count = 0
         flow.udps.is_first_packet = True
 
     def on_update(self, packet, flow):
@@ -15,18 +69,21 @@ class TCPWindowPlugin(NFPlugin):
             flow.udps.is_first_packet = False
         if packet.direction == 1 and flow.udps.init_win_bwd == 0:
             flow.udps.init_win_bwd = packet.ip_size  # Simplified
-        # ACK flag counting would need raw TCP flag access
 
 
-def create_streamer(interface="ens33"):
+def create_streamer(interface="ens33", conn_tracker=None):
     """Tạo NFStreamer để capture live traffic."""
+    plugins = [TCPWindowPlugin()]
+    if conn_tracker is not None:
+        plugins.append(ConnectionRatePlugin(tracker=conn_tracker))
+
     return NFStreamer(
         source=interface,
         statistical_analysis=True,  # Bật 48 statistical features
         accounting_mode=0,          # Link layer
-        udps=TCPWindowPlugin(),
-        idle_timeout=3,
-        active_timeout=5,
+        udps=plugins,               # Danh sách plugins
+        idle_timeout=10,
+        active_timeout=30,
     )
 
 
@@ -37,68 +94,76 @@ def extract_features(flow) -> np.ndarray:
       - CIC-IDS-2017 dùng MICROSECONDS (µs) cho tất cả trường thời gian.
       - NFStream trả về MILLISECONDS (ms) → cần nhân ×1000 để chuyển sang µs.
       - Flow Bytes/s và Flow Packets/s trong CIC dùng duration µs làm mẫu số.
+
+    THAY ĐỔI V2 (2026-05-09):
+      - Bỏ 7 features yếu: Idle Max/Mean/Min, Bwd IAT Std, Bwd Mean Segment Size,
+        Fwd Mean IAT, Fwd IAT Min.
+      - Thêm 7 features mới: SYN/FIN/RST/PSH Flag Count, Total Fwd/Bwd Packets,
+        Fwd Packet Length Min.
+      - Mục đích: Nâng cao khả năng phát hiện Web Attack (SQL Injection, XSS)
+        và phân biệt Brute Force ↔ PortScan.
     """
     # NFStream ms → CIC-IDS-2017 µs (×1000)
     duration_us = flow.bidirectional_duration_ms * 1000.0  # µs
     duration_us_safe = max(duration_us, 1.0)  # tránh chia cho 0
 
     features = np.array([
-        # 0: ACK Flag Count
-        getattr(flow.udps, 'ack_flag_count', 0),
+        # 0: ACK Flag Count (native NFStream)
+        flow.bidirectional_ack_packets,
         # 1: Average Packet Size
         flow.bidirectional_mean_ps,
-        # 2: Avg Bwd Segment Size
-        flow.dst2src_mean_ps,
-        # 3: Bwd IAT Min (ms → µs)
+        # 2: Bwd IAT Min (ms → µs)
         flow.dst2src_min_piat_ms * 1000.0,
-        # 4: Bwd IAT Std (ms → µs)
-        flow.dst2src_stddev_piat_ms * 1000.0,
-        # 5: Bwd IAT Total (ms → µs, approx)
+        # 3: Bwd IAT Total (ms → µs, approx)
         flow.dst2src_max_piat_ms * flow.dst2src_packets * 1000.0,
-        # 6: Bwd Packet Length Mean
+        # 4: Bwd Packet Length Max ← MỚI
+        flow.dst2src_max_ps,
+        # 5: Bwd Packet Length Mean
         flow.dst2src_mean_ps,
-        # 7: Destination Port
+        # 6: Bwd Packet Length Min ← MỚI
+        flow.dst2src_min_ps,
+        # 7: Bwd Packet Length Std ← MỚI
+        flow.dst2src_stddev_ps,
+        # 8: Destination Port
         flow.dst_port,
-        # 8: Flow Bytes/s (bytes / duration_µs × 1e6 = bytes/s)
+        # 9: FIN Flag Count
+        flow.bidirectional_fin_packets,
+        # 10: Flow Bytes/s (bytes / duration_µs × 1e6 = bytes/s)
         flow.bidirectional_bytes / duration_us_safe * 1e6,
-        # 9: Flow Duration (µs)
+        # 11: Flow Duration (µs)
         duration_us,
-        # 10: Flow IAT Max (ms → µs)
+        # 12: Flow IAT Max (ms → µs)
         flow.bidirectional_max_piat_ms * 1000.0,
-        # 11: Flow IAT Std (ms → µs)
+        # 13: Flow IAT Std (ms → µs)
         flow.bidirectional_stddev_piat_ms * 1000.0,
-        # 12: Flow Packets/s (packets / duration_µs × 1e6 = packets/s)
+        # 14: Flow Packets/s (packets / duration_µs × 1e6 = packets/s)
         flow.bidirectional_packets / duration_us_safe * 1e6,
-        # 13: Fwd Header Length (approximate: total_bytes - payload_bytes)
-        flow.src2dst_bytes - (flow.src2dst_mean_ps * flow.src2dst_packets),
-        # 14: Fwd IAT Max (ms → µs)
-        flow.src2dst_max_piat_ms * 1000.0,
-        # 15: Fwd IAT Mean (ms → µs)
-        flow.src2dst_mean_piat_ms * 1000.0,
-        # 16: Fwd IAT Min (ms → µs)
-        flow.src2dst_min_piat_ms * 1000.0,
-        # 17: Fwd IAT Std (ms → µs)
+        # 15: Fwd IAT Std (ms → µs)
         flow.src2dst_stddev_piat_ms * 1000.0,
-        # 18: Fwd IAT Total (ms → µs, approx)
-        flow.src2dst_max_piat_ms * flow.src2dst_packets * 1000.0,
-        # 19: Fwd Packet Length Max
+        # 16: Fwd Packet Length Max
         flow.src2dst_max_ps,
-        # 20: Fwd Packets/s (packets / duration_µs × 1e6 = packets/s)
+        # 17: Fwd Packet Length Min
+        flow.src2dst_min_ps,
+        # 18: Fwd Packets/s (packets / duration_µs × 1e6 = packets/s)
         flow.src2dst_packets / duration_us_safe * 1e6,
-        # 21: Idle Max (ms → µs)
-        (flow.bidirectional_max_idle if hasattr(flow, 'bidirectional_max_idle') else 0) * 1000.0,
-        # 22: Idle Mean (ms → µs)
-        (flow.bidirectional_mean_idle if hasattr(flow, 'bidirectional_mean_idle') else 0) * 1000.0,
-        # 23: Idle Min (ms → µs)
-        (flow.bidirectional_min_idle if hasattr(flow, 'bidirectional_min_idle') else 0) * 1000.0,
-        # 24: Init_Win_bytes_backward
+        # 19: Init_Win_bytes_backward
         getattr(flow.udps, 'init_win_bwd', 0),
-        # 25: Init_Win_bytes_forward
+        # 20: Init_Win_bytes_forward
         getattr(flow.udps, 'init_win_fwd', 0),
-        # 26: Packet Length Mean
-        flow.bidirectional_mean_ps,
-        # 27: Packet Length Std
+        # 21: PSH Flag Count
+        flow.bidirectional_psh_packets,
+        # 22: Port_Conn_Rate
+        getattr(flow.udps, 'conn_rate', 1.0),
+        # 23: Packet Length Std
         flow.bidirectional_stddev_ps,
+        # 24: RST Flag Count
+        flow.bidirectional_rst_packets,
+        # 25: SYN Flag Count
+        flow.bidirectional_syn_packets,
+        # 26: Total Backward Packets
+        flow.dst2src_packets,
+        # 27: Total Fwd Packets
+        flow.src2dst_packets,
         # 28: Total Length of Bwd Packets
         flow.dst2src_bytes,
         # 29: Total Length of Fwd Packets
@@ -112,18 +177,23 @@ def extract_features(flow) -> np.ndarray:
 FEATURE_NAMES = [
     'ACK Flag Count',
     'Average Packet Size',
-    'Avg Bwd Segment Size',
-    'Bwd IAT Min', 'Bwd IAT Std', 'Bwd IAT Total',
+    'Bwd IAT Min', 'Bwd IAT Total',
+    'Bwd Packet Length Max',
     'Bwd Packet Length Mean',
+    'Bwd Packet Length Min',
+    'Bwd Packet Length Std',
     'Destination Port',
+    'FIN Flag Count',
     'Flow Bytes/s', 'Flow Duration', 'Flow IAT Max', 'Flow IAT Std',
     'Flow Packets/s',
-    'Fwd Header Length',
-    'Fwd IAT Max', 'Fwd IAT Mean', 'Fwd IAT Min', 'Fwd IAT Std', 'Fwd IAT Total',
-    'Fwd Packet Length Max',
+    'Fwd IAT Std',
+    'Fwd Packet Length Max', 'Fwd Packet Length Min',
     'Fwd Packets/s',
-    'Idle Max', 'Idle Mean', 'Idle Min',
     'Init_Win_bytes_backward', 'Init_Win_bytes_forward',
-    'Packet Length Mean', 'Packet Length Std',
+    'PSH Flag Count',
+    'Port_Conn_Rate', 'Packet Length Std',
+    'RST Flag Count',
+    'SYN Flag Count',
+    'Total Backward Packets', 'Total Fwd Packets',
     'Total Length of Bwd Packets', 'Total Length of Fwd Packets',
 ]

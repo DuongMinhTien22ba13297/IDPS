@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-Module: threat_evaluator.py
-Chức năng: ML Inference cho Zero-Touch IDPS.
-         - Binary classification (active_model.pkl): Attack hay Benign?
-         - Multi-class classification (classification_model.pkl): Loại tấn công?
-         - Chỉ chạy multiclass khi binary xác nhận Attack → tiết kiệm compute
+Tên file   : threat_evaluator.py
+Mục tiêu   : Thực hiện dự đoán (Inference) mức độ đe dọa của các luồng mạng bằng mô hình ML.
+             Sử dụng cấu trúc 2 lớp XGBoost để tối ưu hóa giữa việc phát hiện nhanh 
+             và phân loại chi tiết.
+Input      :
+  - features : Vector 30 đặc trưng trích xuất từ realtime_extractor.
+  - models/  : Các file mô hình đã huấn luyện (.pkl).
+  - configs/thresholds.json : Các ngưỡng tin cậy để ra quyết định (chặn/cảnh báo).
+Output     :
+  - dict : Kết quả đánh giá gồm: có phải tấn công không, độ tin cậy, loại tấn công, 
+           và thời gian xử lý.
+Quy trình  :
+  1. Khởi tạo: Load đồng thời Active Model (Binary), Classification Model (Multi-class) 
+     và LabelEncoder vào bộ nhớ.
+  2. Validate: Kiểm tra tính hợp lệ của vector đặc trưng đầu vào.
+  3. Binary Inference: Tính toán xác suất Attack/Benign.
+  4. Multi-class Inference: Xác định loại tấn công cụ thể và tổng xác suất tấn công.
+  5. Kết hợp: So sánh kết quả từ cả 2 model để đưa ra kết luận cuối cùng (Confidence cao nhất).
 =============================================================================
 """
 
@@ -151,6 +164,7 @@ class ThreatEvaluator:
         attack_type = None
         attack_confidence = 0.0
         multi_attack_score = 0.0
+        multi_proba = None
 
         try:
             multi_proba = self.classification_model.predict_proba(X)[0]
@@ -179,9 +193,28 @@ class ThreatEvaluator:
         confidence = max(binary_attack_score, multi_attack_score)
         is_attack = confidence > self.auto_block_threshold
 
-        # Nếu multiclass predict BENIGN nhưng binary cho Attack cao → suspicious
-        if is_attack and attack_type is None and binary_attack_score > self.alert_threshold:
-            attack_type = "Suspicious (Binary=Attack, Multi=Benign)"
+        # Nếu multiclass predict BENIGN nhưng binary cho Attack cao → hiển thị chi tiết loại tấn công có xác suất cao nhất
+        if attack_type is None and confidence > self.alert_threshold:
+            if multi_proba is not None:
+                classes_list = list(self.label_encoder.classes_)
+                benign_idx = classes_list.index("BENIGN") if "BENIGN" in classes_list else 0
+                non_benign_probs = [(i, multi_proba[i]) for i in range(len(classes_list)) if i != benign_idx]
+                
+                if non_benign_probs:
+                    highest_attack_idx = max(non_benign_probs, key=lambda x: x[1])[0]
+                    highest_attack_label = self.label_encoder.inverse_transform([highest_attack_idx])[0]
+                    attack_type = f"Suspicious (Binary=Attack, Multi={highest_attack_label})"
+                else:
+                    attack_type = "Suspicious (Binary=Attack, Multi=Unknown)"
+            else:
+                attack_type = "Suspicious (Binary=Attack, Multi=Unknown)"
+
+        # Thêm biến chứa xác suất của tất cả các lớp
+        class_probabilities = {}
+        if multi_proba is not None:
+            for i, c in enumerate(self.label_encoder.classes_):
+                safe_key = str(c).replace(" ", "_").replace("/", "_")
+                class_probabilities[safe_key] = round(float(multi_proba[i]), 4)
 
         elapsed_ms = (time.time() - start) * 1000
 
@@ -192,7 +225,8 @@ class ThreatEvaluator:
             "multi_score": multi_attack_score,
             "attack_type": attack_type,
             "attack_confidence": attack_confidence,
-            "inference_time_ms": round(elapsed_ms, 2)
+            "inference_time_ms": round(elapsed_ms, 2),
+            "class_probabilities": class_probabilities
         }
 
         return result
