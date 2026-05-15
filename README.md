@@ -1,10 +1,10 @@
 # IDPS - Machine Learning-Based Intrusion Detection and Prevention System
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-green.svg?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Suricata](https://img.shields.io/badge/Suricata-6.0+-EF3B2D.svg?style=for-the-badge&logo=suricata&logoColor=white)](https://suricata.io/)
-[![NFStream](https://img.shields.io/badge/NFStream-6.4+-FF6600.svg?style=for-the-badge)](https://www.nfstream.org/)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-green.svg?style=flat-square&logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Suricata](https://img.shields.io/badge/Suricata-6.0+-EF3B2D.svg?style=flat-square&logo=suricata&logoColor=white)](https://suricata.io/)
+[![NFStream](https://img.shields.io/badge/NFStream-6.4+-FF6600.svg?style=flat-square)](https://www.nfstream.org/)
 
 > **Zero-touch Automated Network Defense System** using Machine Learning to detect and prevent network attacks in real-time with ultra-low latency (< 100ms).
 
