@@ -1,5 +1,10 @@
 {
     "description": "Confidence thresholds for autonomous decision engine",
-    "auto_block_threshold": 0.8,
-    "alert_threshold": 0.35
+    "auto_block_threshold": 0.85,
+    "alert_threshold": 0.60,
+    "whitelist_alert_threshold": 0.85,
+    "suricata_override_severity": 3,
+    "suricata_correlation_boost": 0.15,
+    "suricata_auto_block_on_critical": true,
+    "suricata_only_max_score": 0.30
 }

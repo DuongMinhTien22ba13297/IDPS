@@ -15,6 +15,11 @@ RUN apt-get update && \
 # Cập nhật rule (ET Open ruleset)
 RUN suricata-update
 
+# Thêm custom rules cho Web Attack (Layer 7)
+COPY custom-rules/ /etc/suricata/rules/custom/
+COPY patch_config.sh /patch_config.sh
+RUN chmod +x /patch_config.sh && /patch_config.sh
+
 # Biến môi trường cho Network Interface, mặc định sẽ được truyền từ docker-compose
 ENV IFACE=ens33
 

@@ -13,9 +13,12 @@ services:
     tmpfs:
       - /tmp:size=10M,mode=1777
     environment:
-      - IFACE=ens33
+      # Lắng nghe trên cả ens33 (external) và br-idps (internal plaintext)
+      - IFACE=ens33 -i br-idps
     volumes:
       - ../logs/suricata:/var/log/suricata
+    depends_on:
+      - nginx
 
   autodefense:
     build:
@@ -32,9 +35,30 @@ services:
       - ../models:/app/models:ro
       - ../logs:/app/logs
       - ../configs:/app/configs
+      - ../logs/suricata:/app/logs/suricata:ro
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       - loki
+      - suricata
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: reverse-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - idps_net
+
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: juice-shop
+    restart: always
+    ports:
+      - "3001:3000"
+    networks:
+      - idps_net
 
   loki:
     image: grafana/loki:latest
@@ -60,3 +84,9 @@ services:
     volumes:
       - ./grafana/data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
+
+networks:
+  idps_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-idps

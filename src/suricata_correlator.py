@@ -6,10 +6,14 @@ Chức năng: Correlation Engine giữa Suricata Alerts và ML Predictions.
 Input: File Suricata EVE JSON (eve.json) và thông tin ML predictions.
 Output: Điểm rủi ro (risk score) và chi tiết mức độ tương quan (correlation details).
 Ngày tạo: N/A
-Ngày sửa: 2026-05-13
-Lí do sửa: Cải thiện logic đọc file, xử lý log rotation, xoá biến thừa, hoàn thiện header.
-=============================================================================
-"""
+Ngày sửa: 2026-05-20
+Lí do sửa: Sửa 3 lỗi gây False Positive:
+  - Bug 1: Dedup điểm theo loại tấn công và signature_id (ngăn score inflation).
+  - Bug 2: Áp dụng severity_boost như hệ số nhân thực sự vào correlation_score.
+  - Bug 3: Tách nhánh 'suricata_only' (+0.10) khi ML nói Benign, thay vì dùng
+           'different_attack_types' (+0.30) sai logic. Thêm hard cap
+           suricata_only_max_score để giới hạn ảnh hưởng của ET Open alerts.
+============================================================================="""
 
 import json
 import logging
@@ -29,7 +33,15 @@ class SuricataAlert:
     def __init__(self, alert_data: dict):
         self.timestamp = self._parse_timestamp(alert_data.get("timestamp"))
         self.flow_id = alert_data.get("flow_id")
-        self.src_ip = alert_data.get("src_ip")
+        
+        # Lấy Real IP từ X-Forwarded-For nếu có (dành cho Reverse Proxy)
+        http_data = alert_data.get("http", {})
+        xff = http_data.get("xff")
+        if xff:
+            self.src_ip = xff.split(",")[0].strip()
+        else:
+            self.src_ip = alert_data.get("src_ip")
+            
         self.src_port = alert_data.get("src_port")
         self.dest_ip = alert_data.get("dest_ip")
         self.dest_port = alert_data.get("dest_port")
@@ -78,21 +90,25 @@ class SuricataCorrelator:
     """
 
     def __init__(self, eve_json_path: str = "/app/logs/suricata/eve.json",
-                 alert_ttl_seconds: int = 300, max_alerts_per_ip: int = 50):
+                 alert_ttl_seconds: int = 300, max_alerts_per_ip: int = 50,
+                 suricata_only_max_score: float = 0.30):
         self.eve_json_path = Path(eve_json_path)
         self.alert_ttl = timedelta(seconds=alert_ttl_seconds)
         self.max_alerts_per_ip = max_alerts_per_ip
+        # Hard cap cho correlation_score khi ML nói Benign (suricata_only mode)
+        self.suricata_only_max_score = suricata_only_max_score
 
         # In-memory cache: ip → deque of alerts
         self._alerts_by_ip: Dict[str, deque] = defaultdict(lambda: deque(maxlen=max_alerts_per_ip))
         self._lock = threading.Lock()
 
-        # Signature severity mapping (tùy chỉnh theo ruleset)
+        # Signature severity mapping — dùng như hệ số nhân (multiplier) cho correlation_score.
+        # Alert severity thấp (ET Info/Policy) sẽ giảm đáng kể ảnh hưởng.
         self._severity_weights = {
-            1: 0.3,   # Info
-            2: 0.5,   # Warning
-            3: 0.7,   # Notice
-            4: 0.85,  # Critical
+            1: 0.30,  # Info     — gần như vô hại (ET POLICY, ET INFO)
+            2: 0.50,  # Warning  — đáng chú ý nhưng chưa chắc là tấn công
+            3: 0.70,  # Notice   — khả năng cao là tấn công thật
+            4: 0.85,  # Critical — tấn công nghiêm trọng đã xác nhận
         }
 
         # Attack type mapping từ Suricata signature → ML attack type
@@ -235,10 +251,20 @@ class SuricataCorrelator:
         """
         Correlate ML prediction với Suricata alerts.
 
+        Chiến lược tính điểm (đã sửa lỗi 2026-05-20):
+        - Khi ML nói Benign (ml_attack_type rỗng/None): Chỉ cộng điểm nhẹ +0.10
+          mỗi loại tấn công DUY NHẤT từ Suricata (suricata_only mode).
+          Tổng không vượt quá self.suricata_only_max_score (mặc định 0.30).
+        - Khi ML đã nói có tấn công: Dùng logic matching/different_attack_types
+          để xác nhận hoặc phát hiện thêm tín hiệu nguy hiểm.
+        - Điểm DROP từ Suricata custom rules chỉ tính 1 lần mỗi signature_id.
+        - Sau khi tổng hợp, nhân toàn bộ correlation_score với severity_boost
+          (hệ số phản ánh mức độ nghiêm trọng cao nhất trong batch alerts).
+
         Args:
             src_ip: Source IP từ NFStream flow
             dst_port: Destination port
-            ml_attack_type: Loại tấn công từ ML prediction
+            ml_attack_type: Loại tấn công từ ML prediction (None/'' nếu Benign)
             ml_confidence: Confidence score từ ML
 
         Returns:
@@ -251,6 +277,7 @@ class SuricataCorrelator:
             "suricata_alerts_count": 0,
             "matching_signature": False,
             "different_attack_types": False,
+            "suricata_only_detection": False,
             "repeat_offender": False,
             "severity_boost": 0.0,
             "matched_signatures": [],
@@ -265,37 +292,81 @@ class SuricataCorrelator:
             details["suricata_alerts_count"] = len(alerts)
 
             # Check 1: Repeat offender (nhiều alerts từ cùng IP)
-            if len(alerts) >= 3:
-                details["repeat_offender"] = True
-                correlation_score += 0.15
-            elif len(alerts) >= 2:
-                correlation_score += 0.05
+            # Chỉ áp dụng khi ML đã có tín hiệu tấn công, tránh boost cho
+            # traffic bình thường bị Suricata ET Open alert quá nhiều.
+            if ml_attack_type:
+                if len(alerts) >= 3:
+                    details["repeat_offender"] = True
+                    correlation_score += 0.15
+                elif len(alerts) >= 2:
+                    correlation_score += 0.05
 
-            # Check 2: Same attack type (confirmation)
             matched_signatures = []
+            # Set khử trùng lặp: mỗi loại tấn công chỉ cộng điểm 1 lần.
+            seen_attack_types: set = set()
+            # Set khử trùng lặp DROP: mỗi signature_id chỉ cộng điểm 1 lần.
+            seen_drop_sids: set = set()
 
             for alert in alerts:
                 # Map Suricata signature → ML attack type
                 suricata_attack_type = self._map_signature_to_attack_type(alert.signature)
 
-                if suricata_attack_type == ml_attack_type:
-                    details["matching_signature"] = True
-                    correlation_score += 0.20
+                # Cập nhật severity_boost theo alert có severity cao nhất
+                severity_weight = self._severity_weights.get(alert.severity, 0.50)
+                details["severity_boost"] = max(details["severity_boost"], severity_weight)
+
+                # --- Phân nhánh dựa trên kết quả ML ---
+
+                if not ml_attack_type:
+                    # ── Nhánh A: ML nói Benign ──────────────────────────────────
+                    # Suricata alert chỉ mang tính tham khảo nhẹ (+0.10/loại).
+                    # Tránh kích hoạt "different_attack_types" vì ML chưa
+                    # xác nhận bất kỳ tấn công nào.
+                    if suricata_attack_type and suricata_attack_type not in seen_attack_types:
+                        details["suricata_only_detection"] = True
+                        correlation_score += 0.10
+                    if suricata_attack_type:
+                        seen_attack_types.add(suricata_attack_type)
+
+                elif suricata_attack_type == ml_attack_type:
+                    # ── Nhánh B: ML và Suricata cùng loại → Xác nhận (Confirmation) ──
+                    if suricata_attack_type not in seen_attack_types:
+                        details["matching_signature"] = True
+                        correlation_score += 0.20
+                    seen_attack_types.add(suricata_attack_type)
                     matched_signatures.append(alert.signature)
 
-                # Check 3: Different attack types → HIGH RISK
                 elif suricata_attack_type and suricata_attack_type != "Benign":
-                    details["different_attack_types"] = True
-                    correlation_score += 0.30
+                    # ── Nhánh C: ML nói Attack-A, Suricata nói Attack-B → Rất nguy hiểm ──
+                    # IP đang thực hiện đa hình thái tấn công.
+                    if suricata_attack_type not in seen_attack_types:
+                        details["different_attack_types"] = True
+                        correlation_score += 0.30
+                    seen_attack_types.add(suricata_attack_type)
 
-                # Check 4: Severity boost
-                severity_weight = self._severity_weights.get(alert.severity, 0.5)
-                details["severity_boost"] = max(details["severity_boost"], severity_weight)
+                # Check DROP: Custom rules Suricata (L7 DPI) — chỉ tính 1 lần/sid
+                if alert.action in ["drop", "blocked", "reject"]:
+                    if alert.signature_id not in seen_drop_sids:
+                        details["suricata_action_drop"] = True
+                        correlation_score += 0.50
+                        seen_drop_sids.add(alert.signature_id)
 
             details["matched_signatures"] = matched_signatures
 
-        # Cap correlation score
-        correlation_score = min(correlation_score, 0.5)
+        # Áp dụng severity_boost như hệ số nhân:
+        # Alert severity thấp (ET Info/Policy → 0.30) sẽ giảm đáng kể ảnh hưởng.
+        # Chỉ nhân khi severity_boost > 0 (tức là có ít nhất 1 alert).
+        if details["severity_boost"] > 0:
+            correlation_score *= details["severity_boost"]
+
+        # Hard cap khi ML nói Benign: giới hạn tổng điểm tương quan
+        # ở mức suricata_only_max_score (mặc định 0.30) để ET Open alerts
+        # không thể tự mình đẩy final_confidence vượt ngưỡng alert.
+        if not ml_attack_type:
+            correlation_score = min(correlation_score, self.suricata_only_max_score)
+        else:
+            # Khi ML đã xác nhận tấn công, cap cao hơn (0.9) để tối đa hoá tín hiệu
+            correlation_score = min(correlation_score, 0.90)
 
         return correlation_score, details
 

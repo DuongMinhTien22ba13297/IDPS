@@ -10,11 +10,8 @@ Input      :
   - models/  : Các file mô hình đã huấn luyện (.pkl).
   - configs/thresholds.json : Các ngưỡng tin cậy để ra quyết định (chặn/cảnh báo).
 Output     :
-  - dict : Kết quả đánh giá gồm: có phải tấn công không, độ tin cậy, loại tấn công,
+  - dict : Kết quả đánh giá gồm: có phải tấn công không, độ tin cậy, loại tấn công, 
            và thời gian xử lý.
-Ngày sửa: 2026-05-28
-Lí do sửa: Thêm suricata_only_max_score vào _load_thresholds() để đọc từ thresholds.json
-           thay vì để SuricataCorrelator dùng hardcode 0.30.
 Quy trình  :
   1. Khởi tạo: Load đồng thời Active Model (Binary), Classification Model (Multi-class) 
      và LabelEncoder vào bộ nhớ.
