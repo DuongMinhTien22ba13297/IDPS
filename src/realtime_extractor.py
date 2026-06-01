@@ -71,20 +71,29 @@ class TCPWindowPlugin(NFPlugin):
             flow.udps.init_win_bwd = packet.ip_size  # Simplified
 
 
-def create_streamer(interface="ens33", conn_tracker=None):
-    """Tạo NFStreamer để capture live traffic."""
+import random
+
+def create_streamer(interface="ens33", conn_tracker=None, n_meters=0):
+    """Tạo NFStreamer để capture live traffic. n_meters=0 tương ứng với tự động đa tiến trình tối đa CPU cores."""
     plugins = [TCPWindowPlugin()]
     if conn_tracker is not None:
         plugins.append(ConnectionRatePlugin(tracker=conn_tracker))
 
-    return NFStreamer(
+    streamer = NFStreamer(
         source=interface,
         statistical_analysis=True,  # Bật 48 statistical features
         accounting_mode=0,          # Link layer
         udps=plugins,               # Danh sách plugins
         idle_timeout=10,
         active_timeout=30,
+        n_meters=n_meters,
     )
+    
+    # Monkey patch: Thay đổi _idx thành số ngẫu nhiên lớn
+    # Điều này giúp group_id = os.getpid() + self._idx tránh trùng lặp fanout group ID trong namespace host network
+    streamer._idx = random.randint(10000, 50000)
+    
+    return streamer
 
 
 def extract_features(flow) -> np.ndarray:

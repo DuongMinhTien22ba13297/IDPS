@@ -20,7 +20,7 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -229,7 +229,7 @@ class SuricataCorrelator:
 
     def _cleanup_expired_alerts(self):
         """Xóa alerts đã hết TTL."""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cutoff = now - self.alert_ttl
 
         with self._lock:

@@ -65,6 +65,15 @@ except Exception as e:
 
 
 # =============================================================================
+#  CHẾ ĐỘ TEST: SURICATA_ONLY_MODE
+#  Khi bật, hệ thống CHỈ dùng Suricata alert (không chạy ML inference).
+#  Dùng để so sánh Suricata-only vs Full System trong báo cáo.
+#  Cách bật: export SURICATA_ONLY_MODE=true (trước khi khởi động container)
+# =============================================================================
+SURICATA_ONLY_MODE = os.getenv("SURICATA_ONLY_MODE", "false").lower() == "true"
+
+
+# =============================================================================
 #  XỬ LÝ TỪNG FLOW (Event-Driven Pipeline)
 # =============================================================================
 
@@ -73,6 +82,9 @@ def process_flow(flow, ip_mgr: IPManager, evaluator: ThreatEvaluator,
     """
     Xử lý một flow theo pipeline:
     Blacklist → Whitelist (ML monitor) → ML Inference → Auto-Block
+
+    Nếu SURICATA_ONLY_MODE=true:
+    Chỉ dùng Suricata alerts, skip ML → dùng để so sánh A/B testing.
     """
     src_ip = flow.src_ip
     # Bỏ qua IPv6 và các IP rác (chỉ xử lý IPv4)
@@ -110,23 +122,63 @@ def process_flow(flow, ip_mgr: IPManager, evaluator: ThreatEvaluator,
 
     # -----------------------------------------------------------------
     #  Bước 3: Feature Extraction + ML Inference
+    #  (Skip nếu SURICATA_ONLY_MODE=true)
     # -----------------------------------------------------------------
-    features = extract_features(flow)
-    if len(features) != 30:
-        logger.warning(f"Flow {flow.id}: chỉ có {len(features)}/30 features — skip")
-        return
+    if SURICATA_ONLY_MODE:
+        # ═══ SURICATA-ONLY MODE ═══
+        # Không chạy ML, chỉ kiểm tra Suricata alerts cho IP này
+        correlation_score, correlation_details = correlator.correlate(
+            src_ip=src_ip,
+            dst_port=flow.dst_port,
+            ml_attack_type="",   # Không có ML prediction
+            ml_confidence=0.0
+        )
+        # Tạo result giả (không có ML)
+        result = {
+            "is_attack": correlation_details.get("suricata_action_drop", False),
+            "confidence": correlation_score,
+            "binary_score": 0.0,
+            "multi_score": 0.0,
+            "attack_type": None,
+            "attack_confidence": 0.0,
+            "inference_time_ms": 0.0,
+            "class_probabilities": {},
+        }
+        # Nếu Suricata có DROP action → đánh dấu là attack
+        if correlation_details.get("suricata_action_drop"):
+            matched_sigs = correlation_details.get("matched_signatures", ["Unknown"])
+            result["attack_type"] = f"Suricata_L7_DROP ({matched_sigs[0]})" if matched_sigs else "Suricata_L7_DROP"
+            result["confidence"] = max(correlation_score, 0.90)
+            result["is_attack"] = True
 
-    result = evaluator.evaluate(features)
-    
+        result["correlation_score"] = correlation_score
+        result["correlation_details"] = correlation_details
+
+        response_time_ms = (time.time() - flow_start) * 1000
+
+        # Log mode indicator
+        logger.debug(f"SURICATA_ONLY: {src_ip} | corr={correlation_score:.3f} | "
+                     f"suri_alerts={correlation_details.get('suricata_alerts_count', 0)}")
+    else:
+        # ═══ FULL SYSTEM MODE (ML + Suricata) ═══
+        features = extract_features(flow)
+        if len(features) != 30:
+            logger.warning(f"Flow {flow.id}: chỉ có {len(features)}/30 features — skip")
+            return
+
+        result = evaluator.evaluate(features)
+
     # -----------------------------------------------------------------
     #  Bước 3.5: Suricata Correlation (Layer 7)
+    #  (Chỉ chạy trong Full System mode — đã chạy ở trên cho Suricata-only)
     # -----------------------------------------------------------------
-    correlation_score, correlation_details = correlator.correlate(
-        src_ip=src_ip,
-        dst_port=flow.dst_port,
-        ml_attack_type=result.get("attack_type", ""),
-        ml_confidence=result["confidence"]
-    )
+    if not SURICATA_ONLY_MODE:
+        correlation_score, correlation_details = correlator.correlate(
+            src_ip=src_ip,
+            dst_port=flow.dst_port,
+            ml_attack_type=result.get("attack_type", ""),
+            ml_confidence=result["confidence"]
+        )
     
     # Fusion: Kết hợp ML score + Suricata correlation
     final_confidence = min(result["confidence"] + correlation_score, 1.0)
@@ -296,6 +348,8 @@ def main():
     logger.info(f"Interface: {interface}")
     logger.info(f"Models dir: {models_dir}")
     logger.info(f"Config dir: {config_dir}")
+    if SURICATA_ONLY_MODE:
+        logger.warning("⚠️  SURICATA_ONLY_MODE=true — ML inference DISABLED (chỉ Suricata alerts)")
 
     # ---- Khởi tạo các module ----
     logger.info("Đang khởi tạo modules...")
@@ -329,12 +383,35 @@ def main():
 
     logger.info("Tất cả modules đã sẵn sàng!")
 
-    # ---- Khởi tạo NFStreamer ----
+    # ---- Khởi tạo NFStreamer (với retry logic) ----
     logger.info(f"Khởi động NFStreamer trên interface: {interface}")
+    MAX_RETRIES = 10
+    INITIAL_DELAY = 5  # seconds
+    streamer = None
+    tracker = ConnectionTracker(window_sec=10)
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            streamer = create_streamer(interface=interface, conn_tracker=tracker)
+            logger.info("NFStreamer đã sẵn sàng. Đang chờ luồng traffic...")
+            break
+        except (ValueError, OSError) as e:
+            delay = min(INITIAL_DELAY * (2 ** (attempt - 1)), 60)
+            logger.warning(
+                f"NFStreamer không thể kích hoạt interface '{interface}' "
+                f"(lần {attempt}/{MAX_RETRIES}): {e} — thử lại sau {delay}s"
+            )
+            if attempt == MAX_RETRIES:
+                logger.error(
+                    f"Không thể khởi tạo NFStreamer sau {MAX_RETRIES} lần thử. "
+                    f"Kiểm tra: 1) Interface '{interface}' có tồn tại không (ip link show), "
+                    f"2) Container có CAP_ADD: NET_RAW không, "
+                    f"3) libpcap-dev đã cài đặt chưa."
+                )
+                raise
+            time.sleep(delay)
+
     try:
-        tracker = ConnectionTracker(window_sec=10)
-        streamer = create_streamer(interface=interface, conn_tracker=tracker)
-        logger.info("NFStreamer đã sẵn sàng. Đang chờ luồng traffic...")
         logger.info("Pipeline: Blacklist → Whitelist(ML) → ML Inference → Auto-Block")
 
         flow_count = 0

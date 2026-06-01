@@ -12,6 +12,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=10M,mode=1777
+      - /var/lib/suricata:size=50M,mode=0755
+      - /var/run/suricata:size=10M,mode=0755
     environment:
       # Lắng nghe trên cả ens33 (external) và br-idps (internal plaintext)
       - IFACE=ens33 -i br-idps
@@ -27,6 +29,7 @@ services:
     network_mode: 'host'
     cap_add:
       - NET_ADMIN
+      - NET_RAW
     restart: always
     tmpfs:
       - /tmp:size=10M,mode=1777
@@ -45,6 +48,9 @@ services:
     build:
       context: ./nginx
     container_name: reverse-proxy
+    restart: always
+    depends_on:
+      - juice-shop
     ports:
       - "80:80"
       - "443:443"

@@ -1,8 +1,15 @@
 FROM python:3.10-slim
 
-# Cài đặt iptables và iproute2 để can thiệp tường lửa và mạng
+# Cài đặt system dependencies:
+#   - iptables, iproute2: can thiệp tường lửa và mạng
+#   - libpcap-dev: nfstream packet capture
+#   - build-essential, gcc, libffi-dev, python3-dev: nfstream CFFI engine build
+#   - autoconf, libtool, automake, pkg-config: nfstream native build scripts
 RUN apt-get update && \
-    apt-get install -y iptables iproute2 libpcap-dev gcc && \
+    apt-get install -y --no-install-recommends \
+        iptables iproute2 libpcap-dev \
+        build-essential gcc libffi-dev python3-dev \
+        autoconf libtool automake pkg-config && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
