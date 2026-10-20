@@ -1,0 +1,90 @@
+================================================================================
+           BÁO CÁO THỰC NGHIỆM TỐI ƯU HÓA SIÊU THAM SỐ VÀ ĐẶC TRƯNG
+                 (BAYESIAN OPTIMIZATION & CROSS-VALIDATION)
+================================================================================
+
+1. THÔNG TIN CHUNG:
+   - Thời gian thực hiện   : 2026-06-22 17:32:49
+   - File dữ liệu Train    : C:\IDPS\datasets\cic2017_train_80_preprocessed.csv
+   - File dữ liệu Test     : C:\IDPS\datasets\cic2017_test_20_preprocessed.csv
+   - Candidate Features    : 50 (đã loại bỏ 7 đặc trưng không tương thích NFStream)
+   - Chiến lược cân bằng   : SMOTE x10 các lớp [Brute Force, Web Attack, Botnet, PortScan] trong từng fold
+   - Biện pháp chống Leak  : Chọn đặc trưng (ngưỡng 95% cumulative importance) và SMOTE độc lập bên trong từng Train Fold của K-Fold
+
+2. BẢNG SO SÁNH HIỆU NĂNG MÔ HÌNH TRÊN TẬP HOLD-OUT TEST:
+---------------------------------------------------------------------------------------------------------
+| Mô Hình         | Số Lượng Features (k)  | F1-Macro   | F1-Weighted  | Precision-Macro  | Recall-Macro  | Latency (ms/flow)  |
+---------------------------------------------------------------------------------------------------------
+| LIGHTGBM        |                      5 |    0.86580 |      0.98946 |          0.81738 |       0.96109 |           0.003392 |
+| XGBOOST         |                     15 |    0.97559 |      0.99413 |          0.96331 |       0.98857 |           0.001397 |
+| RANDOM_FOREST   |                     22 |    0.91621 |      0.99329 |          0.88820 |       0.97326 |           0.001714 |
+---------------------------------------------------------------------------------------------------------
+
+3. CẤU HÌNH CHI TIẾT CỦA TỪNG MÔ HÌNH TỐI ƯU:
+
+### MÔ HÌNH LIGHTGBM:
+   - Siêu tham số tối ưu  : {'max_depth': 11, 'num_leaves': 96, 'learning_rate': 0.03278458353193385, 'n_estimators': 73, 'subsample': 0.6470896489214762, 'colsample_bytree': 0.6537813916709082}
+   - Số đặc trưng tối ưu  : 5
+   - Danh sách đặc trưng  : ['Down/Up Ratio', 'Total Length of Fwd Packets', 'Fwd Packet Length Mean', 'Flow Duration', 'Init_Win_bytes_backward']
+   - Thời gian train (s)  : 6.86 s
+   - Thời gian phản hồi   : 0.003392 ms/flow
+   - Báo cáo phân loại chi tiết:
+              precision    recall  f1-score   support
+
+      BENIGN       1.00      0.99      0.99    238158
+      Botnet       0.89      0.95      0.92       120
+ Brute Force       0.92      1.00      0.96      1277
+    DoS/DDoS       0.96      0.99      0.98     49994
+    PortScan       0.77      0.88      0.82        42
+  Web Attack       0.36      0.96      0.53       382
+
+    accuracy                           0.99    289973
+   macro avg       0.82      0.96      0.87    289973
+weighted avg       0.99      0.99      0.99    289973
+
+==================================================
+
+### MÔ HÌNH XGBOOST:
+   - Siêu tham số tối ưu  : {'max_depth': 7, 'learning_rate': 0.09735101666143689, 'n_estimators': 114, 'subsample': 0.8322356487650451, 'colsample_bytree': 0.8021641140719096}
+   - Số đặc trưng tối ưu  : 15
+   - Danh sách đặc trưng  : ['Fwd Packet Length Std', 'Fwd Packet Length Mean', 'ACK Flag Count', 'Total Length of Fwd Packets', 'Bwd IAT Std', 'Fwd Packet Length Max', 'Flow Bytes/s', 'Total Fwd Packets', 'Fwd IAT Min', 'Bwd Packets/s', 'Bwd Packet Length Std', 'PSH Flag Count', 'Bwd Packet Length Mean', 'Bwd IAT Max', 'Packet Length Mean']
+   - Thời gian train (s)  : 25.65 s
+   - Thời gian phản hồi   : 0.001397 ms/flow
+   - Báo cáo phân loại chi tiết:
+              precision    recall  f1-score   support
+
+      BENIGN       1.00      0.99      1.00    238158
+      Botnet       1.00      1.00      1.00       120
+ Brute Force       0.93      1.00      0.96      1277
+    DoS/DDoS       0.97      1.00      0.98     49994
+    PortScan       0.91      0.95      0.93        42
+  Web Attack       0.97      0.99      0.98       382
+
+    accuracy                           0.99    289973
+   macro avg       0.96      0.99      0.98    289973
+weighted avg       0.99      0.99      0.99    289973
+
+==================================================
+
+### MÔ HÌNH RANDOM_FOREST:
+   - Siêu tham số tối ưu  : {'max_depth': 25, 'n_estimators': 89, 'min_samples_split': 8, 'min_samples_leaf': 3}
+   - Số đặc trưng tối ưu  : 22
+   - Danh sách đặc trưng  : ['Bwd Packet Length Mean', 'Packet Length Std', 'Bwd Packet Length Std', 'Avg Bwd Segment Size', 'Max Packet Length', 'Bwd Packet Length Max', 'Packet Length Mean', 'Packet Length Variance', 'Init_Win_bytes_backward', 'Average Packet Size', 'Init_Win_bytes_forward', 'FIN Flag Count', 'Bwd IAT Max', 'Bwd IAT Total', 'Flow IAT Max', 'RST Flag Count', 'Down/Up Ratio', 'SYN Flag Count', 'Flow Bytes/s', 'Fwd IAT Max', 'Flow Duration', 'Bwd IAT Mean']
+   - Thời gian train (s)  : 84.99 s
+   - Thời gian phản hồi   : 0.001714 ms/flow
+   - Báo cáo phân loại chi tiết:
+              precision    recall  f1-score   support
+
+      BENIGN       1.00      0.99      1.00    238158
+      Botnet       1.00      1.00      1.00       120
+ Brute Force       0.93      1.00      0.96      1277
+    DoS/DDoS       0.97      1.00      0.99     49994
+    PortScan       0.95      0.88      0.91        42
+  Web Attack       0.48      0.97      0.64       382
+
+    accuracy                           0.99    289973
+   macro avg       0.89      0.97      0.92    289973
+weighted avg       0.99      0.99      0.99    289973
+
+==================================================
+

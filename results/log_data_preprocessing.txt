@@ -1,0 +1,73 @@
+PS C:\IDPS> python src/data_preprocessing.py
+=================================================================
+ ZERO-TOUCH IDPS — PREPROCESSING: GOM NHÓM NHÃN + SMOTE 10x
+=================================================================
+
+[TRAIN SET]
+[1/3] Đang đọc file CSV...
+  → Đã đọc: 1,021,296 dòng × 31 cột
+  → Đang gom nhóm nhãn (Mapping labels)...
+
+  Phân bố nhãn sau khi gom nhóm:
+    BENIGN                    :    803,758 (78.70%)
+    DoS/DDoS                  :    199,902 (19.57%)
+    Exploitation / Rare       :      7,138 ( 0.70%)
+    Brute Force               :      5,106 ( 0.50%)
+    PortScan                  :      3,386 ( 0.33%)
+    Web Attack                :      1,527 ( 0.15%)
+    Botnet                    :        479 ( 0.05%)
+    TỔNG                      :  1,021,296
+
+[2/3] Đang thực hiện SMOTE Oversampling...
+  → Brute Force: 5,106 → 51,060 (×10)
+  → Web Attack: 1,527 → 15,270 (×10)
+  → Botnet: 479 → 4,790 (×10)
+  → Exploitation / Rare: 7,138 → 71,380 (×10)
+  → PortScan: 3,386 → 33,860 (×10)
+
+  → k_neighbors = 5 (auto-adjusted, min minority samples = 479)
+  → Đang chạy SMOTE...
+
+  Phân bố nhãn SAU khi SMOTE:
+    BENIGN                    :    803,758 (68.11%)
+    DoS/DDoS                  :    199,902 (16.94%)
+    Exploitation / Rare       :     71,380 ( 6.05%) (SMOTE)
+    Brute Force               :     51,060 ( 4.33%) (SMOTE)
+    PortScan                  :     33,860 ( 2.87%) (SMOTE)
+    Web Attack                :     15,270 ( 1.29%) (SMOTE)
+    Botnet                    :      4,790 ( 0.41%) (SMOTE)
+    TỔNG                      :  1,180,020
+    → Thêm 158,724 mẫu synthetic
+
+[3/3] Đang lưu file train...
+  → Output: C:\IDPS\datasets\cic2017_train_80_preprocessed.csv
+  → Kích thước: 350.66 MB
+  → Số dòng: 1,180,020
+
+[TEST SET]
+
+=================================================================
+ XỬ LÝ TẬP TEST (chỉ mapping nhãn, không SMOTE)
+=================================================================
+[1/3] Đang đọc file CSV...
+  → Đã đọc: 255,325 dòng × 31 cột
+  → Đang gom nhóm nhãn (Mapping labels)...
+
+  Phân bố nhãn sau khi gom nhóm:
+    BENIGN                    :    200,940 (78.70%)
+    DoS/DDoS                  :     49,975 (19.57%)
+    Exploitation / Rare       :      1,785 ( 0.70%)
+    Brute Force               :      1,277 ( 0.50%)
+    PortScan                  :        846 ( 0.33%)
+    Web Attack                :        382 ( 0.15%)
+    Botnet                    :        120 ( 0.05%)
+    TỔNG                      :    255,325
+
+[2/2] Đang lưu file test đã xử lý...
+  → Output: C:\IDPS\datasets\cic2017_test_20_preprocessed.csv
+  → Kích thước: 74.98 MB
+  → Số dòng: 255,325
+
+=================================================================
+ HOÀN TẤT PREPROCESSING (TRAIN + TEST)!
+=================================================================

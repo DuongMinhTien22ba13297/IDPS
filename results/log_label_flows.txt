@@ -1,0 +1,32 @@
+PS C:\IDPS> python src/label_flows.py
+======================================================================
+ PHASE 2: GÁN NHÃN DỮ LIỆU (Timezone Offset: -3h) 
+======================================================================
+
+[05:52:01] Đang gán nhãn cho Friday...
+  → Found 633 attacks in this chunk. Examples: {'Botnet': np.int64(633)}
+  → Found 78588 attacks in this chunk. Examples: {'PortScan': np.int64(78588)}
+  → Found 104723 attacks in this chunk. Examples: {'PortScan': np.int64(57044), 'DDoS': np.int64(47577), 'Botnet': np.int64(102)}
+  → Found 82527 attacks in this chunk. Examples: {'DDoS': np.int64(58606), 'PortScan': np.int64(23921)}
+
+[05:52:18] Đang gán nhãn cho Monday...
+
+[05:52:31] Đang gán nhãn cho Thursday...
+  → Found 1823 attacks in this chunk. Examples: {'Web Attack – Brute Force': np.int64(1226), 'Web Attack – XSS': np.int64(589), 'Web Attack – Sql Injection': np.int64(8)}
+  → Found 31988 attacks in this chunk. Examples: {'Infiltration': np.int64(31988)}
+  → Found 35312 attacks in this chunk. Examples: {'Infiltration': np.int64(35014), 'Web Attack – Brute Force': np.int64(191), 'Web Attack – XSS': np.int64(106), 'Web Attack – Sql Injection': np.int64(1)}
+
+[05:52:45] Đang gán nhãn cho Tuesday...
+  → Found 2748 attacks in this chunk. Examples: {'FTP-Patator': np.int64(2748)}
+  → Found 2582 attacks in this chunk. Examples: {'SSH-Patator': np.int64(1411), 'FTP-Patator': np.int64(1171)}
+  → Found 1053 attacks in this chunk. Examples: {'SSH-Patator': np.int64(1053)}
+
+[05:52:58] Đang gán nhãn cho Wednesday...
+  → Found 62602 attacks in this chunk. Examples: {'DoS Hulk': np.int64(41517), 'DoS Slowhttptest': np.int64(10697), 'DoS slowloris': np.int64(10388)}
+  → Found 98125 attacks in this chunk. Examples: {'DoS Hulk': np.int64(89331), 'DoS GoldenEye': np.int64(8791), 'DoS Slowhttptest': np.int64(3)}
+  → Found 1 attacks in this chunk. Examples: {'Heartbleed': np.int64(1)}
+  → Found 26745 attacks in this chunk. Examples: {'DoS Hulk': np.int64(21831), 'DoS Slowhttptest': np.int64(1796), 'DoS slowloris': np.int64(1667), 'DoS GoldenEye': np.int64(1451)}
+
+======================================================================
+ HOÀN TẤT GÁN NHÃN! File tổng hợp: C:\IDPS\datasets\cic2017_nfs_labeled.csv
+======================================================================

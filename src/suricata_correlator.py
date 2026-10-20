@@ -6,13 +6,10 @@ Chức năng: Correlation Engine giữa Suricata Alerts và ML Predictions.
 Input: File Suricata EVE JSON (eve.json) và thông tin ML predictions.
 Output: Điểm rủi ro (risk score) và chi tiết mức độ tương quan (correlation details).
 Ngày tạo: N/A
-Ngày sửa: 2026-05-20
-Lí do sửa: Sửa 3 lỗi gây False Positive:
-  - Bug 1: Dedup điểm theo loại tấn công và signature_id (ngăn score inflation).
-  - Bug 2: Áp dụng severity_boost như hệ số nhân thực sự vào correlation_score.
-  - Bug 3: Tách nhánh 'suricata_only' (+0.10) khi ML nói Benign, thay vì dùng
-           'different_attack_types' (+0.30) sai logic. Thêm hard cap
-           suricata_only_max_score để giới hạn ảnh hưởng của ET Open alerts.
+Ngày sửa: 2026-06-15
+Lí do sửa: Sửa lỗi signature_id >= 1000000 nhận diện nhầm các luật Emerging Threats
+           (sid >= 2000000) thành custom L7 drop rule, khiến brute force và các
+           tấn công khác bị ghi đè nhãn thành Suricata_L7_DROP.
 ============================================================================="""
 
 import json
@@ -46,6 +43,7 @@ class SuricataAlert:
         self.dest_ip = alert_data.get("dest_ip")
         self.dest_port = alert_data.get("dest_port")
         self.protocol = alert_data.get("proto")
+        self.in_iface = alert_data.get("in_iface")
         self.signature = alert_data.get("alert", {}).get("signature", "")
         self.signature_id = alert_data.get("alert", {}).get("signature_id")
         self.category = alert_data.get("alert", {}).get("category", "")
@@ -67,6 +65,10 @@ class SuricataAlert:
             "src_ip": self.src_ip,
             "src_port": self.src_port,
             "dest_port": self.dest_port,
+            "protocol": self.protocol,
+            "in_iface": self.in_iface,
+            "signature_id": self.signature_id,
+            "action": self.action,
             "signature": self.signature,
             "category": self.category,
             "severity": self.severity,
@@ -133,24 +135,21 @@ class SuricataCorrelator:
             "sql": "Web Attack",
             "injection": "Web Attack",
             "web-attack": "Web Attack",
+            "traversal": "Web Attack",
 
             # Botnet
             "bot": "Botnet",
             "c2": "Botnet",
             "malware": "Botnet",
 
-            # Exploitation
-            "exploit": "Exploitation/Rare",
-            "vulnerability": "Exploitation/Rare",
+            # Exploitation / Rare class has been removed
         }
 
         # Background thread để đọc alerts
         self._running = False
         self._reader_thread: Optional[threading.Thread] = None
 
-    # -----------------------------------------------------------------
     #  Alert Reading (Background Thread)
-    # -----------------------------------------------------------------
 
     def start(self):
         """Bắt đầu background thread để đọc Suricata alerts."""
@@ -242,12 +241,79 @@ class SuricataCorrelator:
                 if not alerts:
                     del self._alerts_by_ip[ip]
 
-    # -----------------------------------------------------------------
     #  Correlation Logic
-    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _normalise_protocol(protocol) -> Optional[str]:
+        if protocol is None:
+            return None
+        value = str(protocol).upper()
+        return {"6": "TCP", "17": "UDP"}.get(value, value)
+
+    @staticmethod
+    def _is_policy_rule(alert: SuricataAlert) -> bool:
+        """Custom IDPS alert that asks the daemon to enforce a policy block."""
+        return bool(
+            (alert.signature_id is not None and 1000000 <= alert.signature_id < 2000000)
+            or "IDPS" in alert.signature
+        )
+
+    def _alert_matches_flow(
+        self,
+        alert: SuricataAlert,
+        *,
+        dst_port: int,
+        src_port: Optional[int],
+        protocol,
+        flow_start_ms: Optional[float],
+        flow_end_ms: Optional[float],
+        related_dst_ports: set[int],
+    ) -> bool:
+        """Match an EVE alert to the current NFStream flow, not just its source IP."""
+        allowed_ports = {int(dst_port), *related_dst_ports}
+        try:
+            if int(alert.dest_port) not in allowed_ports:
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        if src_port is not None:
+            try:
+                if int(alert.src_port) != int(src_port):
+                    return False
+            except (TypeError, ValueError):
+                return False
+
+        expected_protocol = self._normalise_protocol(protocol)
+        if expected_protocol and self._normalise_protocol(alert.protocol) != expected_protocol:
+            return False
+
+        if flow_start_ms is not None and flow_end_ms is not None:
+            alert_ms = alert.timestamp.timestamp() * 1000.0
+            # Small allowance for independent timestamping/capture paths.
+            if not (float(flow_start_ms) - 2000.0 <= alert_ms <= float(flow_end_ms) + 2000.0):
+                return False
+        return True
+
+    @staticmethod
+    def _deduplicate_alerts(alerts: List[SuricataAlert]) -> tuple[List[SuricataAlert], int]:
+        """Collapse the same signature observed on ens33 and the Docker bridge."""
+        unique = {}
+        for alert in alerts:
+            signature_key = alert.signature_id if alert.signature_id is not None else alert.signature
+            # Duplicate interface observations in this lab are sub-millisecond apart.
+            time_bucket = int(alert.timestamp.timestamp() * 100)
+            key = (signature_key, alert.src_ip, alert.src_port, time_bucket)
+            current = unique.get(key)
+            if current is None or (current.action == "allowed" and alert.action != "allowed"):
+                unique[key] = alert
+        return list(unique.values()), len(alerts) - len(unique)
 
     def correlate(self, src_ip: str, dst_port: int, ml_attack_type: str,
-                  ml_confidence: float) -> Tuple[float, dict]:
+                  ml_confidence: float, *, src_port: Optional[int] = None,
+                  protocol=None, flow_start_ms: Optional[float] = None,
+                  flow_end_ms: Optional[float] = None,
+                  related_dst_ports: Optional[set[int]] = None) -> Tuple[float, dict]:
         """
         Correlate ML prediction với Suricata alerts.
 
@@ -275,31 +341,62 @@ class SuricataCorrelator:
         correlation_score = 0.0
         details = {
             "suricata_alerts_count": 0,
+            "same_flow_alerts_count": 0,
+            "historical_alerts_count": 0,
+            "deduplicated_alerts_count": 0,
+            "historical_attack_types": [],
             "matching_signature": False,
             "different_attack_types": False,
             "suricata_only_detection": False,
             "repeat_offender": False,
             "severity_boost": 0.0,
             "matched_signatures": [],
+            "matched_signature_ids": [],
+            "matched_alerts": [],
+            "suricata_action_drop": False,
+            "suricata_packet_drop": False,
+            "suricata_policy_match": False,
+            "suricata_enforcement_requested": False,
         }
 
         with self._lock:
-            alerts = self._alerts_by_ip.get(src_ip, deque())
+            all_alerts = list(self._alerts_by_ip.get(src_ip, deque()))
 
-            if not alerts:
+            if not all_alerts:
                 return 0.0, details
 
+            related_ports = {int(port) for port in (related_dst_ports or set())}
+            flow_alerts_raw = [
+                alert for alert in all_alerts
+                if self._alert_matches_flow(
+                    alert,
+                    dst_port=dst_port,
+                    src_port=src_port,
+                    protocol=protocol,
+                    flow_start_ms=flow_start_ms,
+                    flow_end_ms=flow_end_ms,
+                    related_dst_ports=related_ports,
+                )
+            ]
+            alerts, duplicate_count = self._deduplicate_alerts(flow_alerts_raw)
+            historical_alerts = [alert for alert in all_alerts if alert not in flow_alerts_raw]
             details["suricata_alerts_count"] = len(alerts)
+            details["same_flow_alerts_count"] = len(alerts)
+            details["historical_alerts_count"] = len(historical_alerts)
+            details["deduplicated_alerts_count"] = duplicate_count
+            details["historical_attack_types"] = sorted({
+                attack_type
+                for attack_type in (
+                    self._map_signature_to_attack_type(alert.signature)
+                    for alert in historical_alerts
+                )
+                if attack_type
+            })
 
-            # Check 1: Repeat offender (nhiều alerts từ cùng IP)
-            # Chỉ áp dụng khi ML đã có tín hiệu tấn công, tránh boost cho
-            # traffic bình thường bị Suricata ET Open alert quá nhiều.
-            if ml_attack_type:
-                if len(alerts) >= 3:
-                    details["repeat_offender"] = True
-                    correlation_score += 0.15
-                elif len(alerts) >= 2:
-                    correlation_score += 0.05
+            # History is diagnostic context only. It never adds score or overrides
+            # the decision for a different flow.
+            if not alerts:
+                return 0.0, details
 
             matched_signatures = []
             # Set khử trùng lặp: mỗi loại tấn công chỉ cộng điểm 1 lần.
@@ -310,6 +407,8 @@ class SuricataCorrelator:
             for alert in alerts:
                 # Map Suricata signature → ML attack type
                 suricata_attack_type = self._map_signature_to_attack_type(alert.signature)
+                if alert.signature not in matched_signatures:
+                    matched_signatures.append(alert.signature)
 
                 # Cập nhật severity_boost theo alert có severity cao nhất
                 severity_weight = self._severity_weights.get(alert.severity, 0.50)
@@ -334,7 +433,6 @@ class SuricataCorrelator:
                         details["matching_signature"] = True
                         correlation_score += 0.20
                     seen_attack_types.add(suricata_attack_type)
-                    matched_signatures.append(alert.signature)
 
                 elif suricata_attack_type and suricata_attack_type != "Benign":
                     # ── Nhánh C: ML nói Attack-A, Suricata nói Attack-B → Rất nguy hiểm ──
@@ -344,14 +442,27 @@ class SuricataCorrelator:
                         correlation_score += 0.30
                     seen_attack_types.add(suricata_attack_type)
 
-                # Check DROP: Custom rules Suricata (L7 DPI) — chỉ tính 1 lần/sid
-                if alert.action in ["drop", "blocked", "reject"]:
+                # Keep packet verdict and daemon policy enforcement distinct.
+                packet_drop = alert.action in ["drop", "blocked", "reject"]
+                policy_match = self._is_policy_rule(alert)
+                if packet_drop:
+                    details["suricata_packet_drop"] = True
+                if policy_match:
+                    details["suricata_policy_match"] = True
+                if packet_drop or policy_match:
                     if alert.signature_id not in seen_drop_sids:
-                        details["suricata_action_drop"] = True
                         correlation_score += 0.50
                         seen_drop_sids.add(alert.signature_id)
 
             details["matched_signatures"] = matched_signatures
+            details["matched_signature_ids"] = sorted({
+                alert.signature_id for alert in alerts if alert.signature_id is not None
+            })
+            details["matched_alerts"] = [alert.to_dict() for alert in alerts]
+            details["suricata_action_drop"] = details["suricata_packet_drop"]
+            details["suricata_enforcement_requested"] = bool(
+                details["suricata_packet_drop"] or details["suricata_policy_match"]
+            )
 
         # Áp dụng severity_boost như hệ số nhân:
         # Alert severity thấp (ET Info/Policy → 0.30) sẽ giảm đáng kể ảnh hưởng.
@@ -383,9 +494,7 @@ class SuricataCorrelator:
 
         return None
 
-    # -----------------------------------------------------------------
     #  Info / Debug
-    # -----------------------------------------------------------------
 
     def get_recent_alerts(self, ip: str, limit: int = 10) -> List[dict]:
         """Lấy recent alerts cho một IP."""

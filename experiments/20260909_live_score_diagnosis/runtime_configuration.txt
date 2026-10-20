@@ -1,0 +1,43 @@
+State  Recv-Q Send-Q   Local Address:Port  Peer Address:PortProcess
+LISTEN 0      4096           0.0.0.0:80         0.0.0.0:*          
+LISTEN 0      4096           0.0.0.0:22         0.0.0.0:*          
+LISTEN 0      4096           0.0.0.0:443        0.0.0.0:*          
+LISTEN 0      4096     127.0.0.53%lo:53         0.0.0.0:*          
+LISTEN 0      4096        127.0.0.54:53         0.0.0.0:*          
+LISTEN 0      4096   192.168.226.151:3000       0.0.0.0:*          
+LISTEN 0      4096           0.0.0.0:3001       0.0.0.0:*          
+LISTEN 0      4096         127.0.0.1:36467      0.0.0.0:*          
+LISTEN 0      4096   192.168.226.151:3100       0.0.0.0:*          
+LISTEN 0      4096              [::]:80            [::]:*          
+LISTEN 0      32                   *:21               *:*          
+LISTEN 0      4096              [::]:22            [::]:*          
+LISTEN 0      4096              [::]:443           [::]:*          
+LISTEN 0      4096              [::]:3001          [::]:*          
+{
+    "description": "IP Whitelist - Trusted IPs (admin, gateway, internal services). IPs here will NOT be blocked by iptables, but ML inference still runs for anomaly monitoring.",
+    "ips": [
+        "192.168.226.1",
+        "192.168.226.15",
+	"192.168.225.151",
+	"172.16.1.1",
+	"172.16.1.2",
+        "127.0.0.1",
+	"fe80::20c:29ff:fecc:4bbb",
+	"fe80::20c:29ff:fee3:d92"
+    ]
+}
+{
+    "description": "Confidence thresholds for autonomous decision engine. suricata_only_max_score: hard cap correlation score khi ML=Benign",
+    "auto_block_threshold": 0.85,
+    "alert_threshold": 0.60,
+    "suricata_only_max_score": 0.30,
+    "ban_duration_seconds": 60
+}
+d8ddfa9e1d5b7579356cd8aabf661a4e4516ee0f80f3aecc4b3ada793a6cb3a4  src/realtime_extractor.py
+3033025a72d8510c72c84768158c3c53ae4c01af522205460a907d21726ff3a5  src/threat_evaluator.py
+afb178530ca697ae030a740c28b7ff4956dd75389ff7548d5037d220e44ea065  src/autodefense_daemon.py
+bc97e57e96db2364a7beee3b8717089a8e7c15b11be210d0ffc785a9f795d0ef  models/active_model.pkl
+09fb01bc824f5a57ce4048551d8ec6317b4e658a1e14d9ef39fb1adc2c8dc4a0  models/classification_model.pkl
+d9ec493658bd249b4c949dec680f80fbd32561c2769e8cc4ce033935e23757d3  models/label_encoder.pkl
+20e285313f0ac743a4a7324eaa8fc726de217edef5afb09e7703a4568bdef950  models/model_metadata.json
+tail: invalid number of lines: ‘45\r’

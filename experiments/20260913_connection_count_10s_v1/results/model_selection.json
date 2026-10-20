@@ -1,0 +1,113 @@
+{
+  "experiment_id": "20260913_connection_count_10s_v1",
+  "selection_rule": "Highest five-fold development CV macro-F1 mean; final test not accessed during selection",
+  "random_seed": 42,
+  "cv_splits": 5,
+  "requested_trials_per_model": 30,
+  "tuning_subset_counts": {
+    "BENIGN": 80000,
+    "Brute Force": 5106,
+    "DoS/DDoS": 20000,
+    "PortScan": 20000,
+    "Web Attack": 1696
+  },
+  "smote_classes": [
+    "Brute Force",
+    "Web Attack"
+  ],
+  "models": [
+    {
+      "model": "lightgbm",
+      "best_trial": 20,
+      "cv_macro_f1_mean": 0.98857158342645,
+      "cv_macro_f1_std": 0.0013585421327375633,
+      "fold_scores": [
+        0.9872935863636622,
+        0.9880443168907963,
+        0.9900904412791404,
+        0.9899644496762594,
+        0.9874651229223919
+      ],
+      "fold_feature_counts": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "best_params": {
+        "max_depth": 11,
+        "num_leaves": 104,
+        "learning_rate": 0.04864136072945017,
+        "n_estimators": 110,
+        "subsample": 0.7733412810806426,
+        "colsample_bytree": 0.6534462948952906
+      },
+      "completed_trials": 30
+    },
+    {
+      "model": "random_forest",
+      "best_trial": 28,
+      "cv_macro_f1_mean": 0.9928398136513839,
+      "cv_macro_f1_std": 0.0010588150463507122,
+      "fold_scores": [
+        0.9932828697073219,
+        0.9918489116090619,
+        0.9927516194208316,
+        0.9944020443292997,
+        0.9919136231904044
+      ],
+      "fold_feature_counts": [
+        34,
+        34,
+        35,
+        36,
+        35
+      ],
+      "best_params": {
+        "max_depth": 23,
+        "n_estimators": 71,
+        "min_samples_split": 4,
+        "min_samples_leaf": 1
+      },
+      "completed_trials": 30
+    },
+    {
+      "model": "xgboost",
+      "best_trial": 29,
+      "cv_macro_f1_mean": 0.9955843046306916,
+      "cv_macro_f1_std": 0.00035516294522395457,
+      "fold_scores": [
+        0.9951826800095676,
+        0.9956722448240379,
+        0.995333488772008,
+        0.9961045549578162,
+        0.9956285545900283
+      ],
+      "fold_feature_counts": [
+        13,
+        14,
+        14,
+        15,
+        14
+      ],
+      "best_params": {
+        "max_depth": 8,
+        "learning_rate": 0.10804635545332622,
+        "n_estimators": 78,
+        "subsample": 0.9975371140198833,
+        "colsample_bytree": 0.8519416923901437
+      },
+      "completed_trials": 30
+    }
+  ],
+  "winner": "xgboost",
+  "winner_params": {
+    "max_depth": 8,
+    "learning_rate": 0.10804635545332622,
+    "n_estimators": 78,
+    "subsample": 0.9975371140198833,
+    "colsample_bytree": 0.8519416923901437
+  },
+  "elapsed_seconds": 1718.693983078003
+}

@@ -19,6 +19,7 @@ services:
       - IFACE=ens33 -i br-idps
     volumes:
       - ../logs/suricata:/var/log/suricata
+      - ./suricata/custom-rules:/etc/suricata/rules/custom:ro
     depends_on:
       - nginx
 
@@ -31,6 +32,11 @@ services:
       - NET_ADMIN
       - NET_RAW
     restart: always
+    environment:
+      - MONITOR_ONLY_MODE=${MONITOR_ONLY_MODE:-false}
+      - SURICATA_ONLY_MODE=${SURICATA_ONLY_MODE:-false}
+      - TEST_RUN_ID=${TEST_RUN_ID:-production}
+      - SURICATA_RELATED_PORTS=${SURICATA_RELATED_PORTS:-80:3000,443:3000,3001:3000}
     tmpfs:
       - /tmp:size=10M,mode=1777
     volumes:

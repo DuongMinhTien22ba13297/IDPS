@@ -1,0 +1,64 @@
+{
+  "experiment_id": "20260913_connection_count_10s_v2",
+  "winner": "xgboost",
+  "params": {
+    "max_depth": 10,
+    "learning_rate": 0.06227217552472507,
+    "n_estimators": 143,
+    "subsample": 0.6734086368630425,
+    "colsample_bytree": 0.6938534958454732
+  },
+  "selected_features": [
+    "RST Flag Count",
+    "Bwd Packets/s",
+    "SYN Flag Count",
+    "Total Fwd Packets",
+    "Bwd Packet Length Std",
+    "Down/Up Ratio",
+    "Connection Count 10s",
+    "ACK Flag Count",
+    "Fwd PSH Flags",
+    "Flow Packets/s",
+    "Fwd IAT Min",
+    "Packet Length Mean",
+    "Total Length of Fwd Packets",
+    "Min Packet Length",
+    "Bwd Packet Length Mean",
+    "Total Length of Bwd Packets",
+    "Flow Bytes/s",
+    "PSH Flag Count",
+    "Total Backward Packets",
+    "Flow IAT Std",
+    "Init_Win_bytes_forward"
+  ],
+  "classes": [
+    "BENIGN",
+    "Brute Force",
+    "DoS/DDoS",
+    "PortScan",
+    "Web Attack"
+  ],
+  "smote": {
+    "targets": {
+      "Brute Force": 51060,
+      "Web Attack": 16960
+    },
+    "k_neighbors": 5
+  },
+  "random_seed": 42,
+  "runtime_threshold": 0.85,
+  "connection_count_contract": {
+    "feature": "Connection Count 10s",
+    "window_ms": 10000,
+    "window_interval": "(t-window, t]",
+    "includes_current_flow": true,
+    "key_columns": [
+      "src_ip",
+      "dst_ip",
+      "dst_port",
+      "protocol"
+    ],
+    "timestamp_column": "bidirectional_first_seen_ms",
+    "causal": true
+  }
+}

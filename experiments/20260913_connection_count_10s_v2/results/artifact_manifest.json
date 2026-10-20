@@ -1,0 +1,43 @@
+{
+  "experiment_id": "20260913_connection_count_10s_v2",
+  "verified_at_utc": "2026-09-13T15:31:35.896177+00:00",
+  "classes": [
+    "BENIGN",
+    "Brute Force",
+    "DoS/DDoS",
+    "PortScan",
+    "Web Attack"
+  ],
+  "artifacts": [
+    {
+      "path": "results\\data_lineage.json",
+      "bytes": 4038,
+      "sha256": "f9914026faf229d408912e8c9d288b32eec0747b9a7295549c478280a223cb1a"
+    },
+    {
+      "path": "results\\model_selection.json",
+      "bytes": 2819,
+      "sha256": "bb38d467b81d4e2f0e18ede57c7b7bd4764b5d1f34c1f0e35123d06015ceeb75"
+    },
+    {
+      "path": "results\\final_evaluation.json",
+      "bytes": 8364,
+      "sha256": "266de47cf35745426dfba179eb0788f349e53a3e5e2975bcb7e67b54836ba35e"
+    },
+    {
+      "path": "models\\active_model.pkl",
+      "bytes": 557035,
+      "sha256": "cda7b54cddf846514ab192649b79217f8ff4be137027434a290b592e864150a4"
+    },
+    {
+      "path": "models\\classification_model.pkl",
+      "bytes": 1883510,
+      "sha256": "c6f9625c4aa823239ca052ee09797b32b92c06c3f993e0f2ad7d7e8e46b8391c"
+    },
+    {
+      "path": "models\\label_encoder.pkl",
+      "bytes": 370,
+      "sha256": "d9ec493658bd249b4c949dec680f80fbd32561c2769e8cc4ce033935e23757d3"
+    }
+  ]
+}

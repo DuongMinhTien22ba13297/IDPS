@@ -1,0 +1,130 @@
+{
+  "window_start_utc": "2026-09-08T20:00:00Z",
+  "snapshot_note": "Read-only snapshot during 2026-09-08 21:20-21:30 UTC; counts are scored flows, not ground-truth attack recall.",
+  "http3001": {
+    "http3001_scored_flows": 815,
+    "multiclass_argmax": {
+      "BENIGN": 815
+    },
+    "minutes": {
+      "2026-09-08T20:48": 104,
+      "2026-09-08T20:49": 214,
+      "2026-09-08T20:50": 138,
+      "2026-09-08T20:53": 1,
+      "2026-09-08T21:05": 1,
+      "2026-09-08T21:07": 67,
+      "2026-09-08T21:09": 108,
+      "2026-09-08T21:10": 108,
+      "2026-09-08T21:13": 71,
+      "2026-09-08T21:16": 1,
+      "2026-09-08T21:19": 1,
+      "2026-09-08T21:20": 1
+    },
+    "highest_bruteforce_probability": [
+      {
+        "event_type": "ml_probs",
+        "timestamp": "2026-09-08T20:49:18.803394+00:00",
+        "src_ip": "172.16.1.10",
+        "dst_port": 3001,
+        "probs": {
+          "BENIGN": 0.9998,
+          "Brute_Force": 0.0001,
+          "DoS_DDoS": 0.0001,
+          "PortScan": 0,
+          "Web_Attack": 0
+        }
+      },
+      {
+        "event_type": "ml_probs",
+        "timestamp": "2026-09-08T20:49:18.821053+00:00",
+        "src_ip": "172.16.1.10",
+        "dst_port": 3001,
+        "probs": {
+          "BENIGN": 0.9997,
+          "Brute_Force": 0.0001,
+          "DoS_DDoS": 0.0001,
+          "PortScan": 0,
+          "Web_Attack": 0
+        }
+      },
+      {
+        "event_type": "ml_probs",
+        "timestamp": "2026-09-08T20:49:18.841202+00:00",
+        "src_ip": "172.16.1.10",
+        "dst_port": 3001,
+        "probs": {
+          "BENIGN": 0.9998,
+          "Brute_Force": 0.0001,
+          "DoS_DDoS": 0.0001,
+          "PortScan": 0,
+          "Web_Attack": 0
+        }
+      },
+      {
+        "event_type": "ml_probs",
+        "timestamp": "2026-09-08T20:49:18.857994+00:00",
+        "src_ip": "172.16.1.10",
+        "dst_port": 3001,
+        "probs": {
+          "BENIGN": 0.9998,
+          "Brute_Force": 0.0001,
+          "DoS_DDoS": 0.0001,
+          "PortScan": 0,
+          "Web_Attack": 0
+        }
+      },
+      {
+        "event_type": "ml_probs",
+        "timestamp": "2026-09-08T20:49:18.877073+00:00",
+        "src_ip": "172.16.1.10",
+        "dst_port": 3001,
+        "probs": {
+          "BENIGN": 0.9997,
+          "Brute_Force": 0.0001,
+          "DoS_DDoS": 0.0001,
+          "PortScan": 0,
+          "Web_Attack": 0
+        }
+      }
+    ]
+  },
+  "override_sample": {
+    "time": "2026-09-08 21:05:10,088",
+    "flow_id": 2521,
+    "features": {
+      "Bwd Packets/s": 0.7946598855689765,
+      "Max Packet Length": 398,
+      "RST Flag Count": 2,
+      "Bwd Packet Length Std": 20.42057785666214,
+      "Total Fwd Packets": 7,
+      "Down/Up Ratio": 0.7142857142857143,
+      "SYN Flag Count": 2,
+      "PSH Flag Count": 3,
+      "Total Length of Fwd Packets": 818,
+      "ACK Flag Count": 9,
+      "Flow IAT Std": 1364213.5463335644,
+      "Flow Bytes/s": 191.19516846789574,
+      "Total Length of Bwd Packets": 385,
+      "Fwd IAT Min": 1000,
+      "Packet Length Mean": 100.25,
+      "Fwd PSH Flags": 2,
+      "Total Backward Packets": 5,
+      "Packet Length Std": 95.03121496740859,
+      "Fwd Packet Length Max": 398,
+      "Init_Win_bytes_forward": 64240,
+      "Fwd Packet Length Std": 124.52500227053277
+    },
+    "decision": "2026-09-08 21:05:10,126 [WARNING] AUTO_BLOCKED: 172.16.1.10 | Type: Suricata_L7_DROP | Score: 0.900 (bin=0.001, multi=0.000, corr=0.300, suri_alerts=4) | Port: 3001 | Inference: 3.3ms | Total: 14ms"
+  },
+  "correlation_reproduction": {
+    "alert_age_seconds": 90,
+    "alert_dst_port": 443,
+    "current_flow_dst_port": 3001,
+    "alert_action": "allowed",
+    "signature_id": 1000001,
+    "ml_attack_type": null,
+    "ml_confidence": 0.01,
+    "result_correlation_score": 0.18,
+    "result_suricata_action_drop": true
+  }
+}

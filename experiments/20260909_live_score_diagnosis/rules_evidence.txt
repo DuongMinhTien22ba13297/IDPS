@@ -1,0 +1,86 @@
+# w IDPS Custom Rules — Layer 7 Web Attack Detection
+#  Action is set to 'drop' to block immediately.
+#  SQL Injection Detection 
+drop http any any -> $HOME_NET any (msg:"IDPS SQL Injection Attempt - UNION SELECT"; \
+  flow:established,to_server; \
+  content:"UNION"; nocase; http_uri; content:"SELECT"; nocase; http_uri; distance:0; within:20; \
+  classtype:web-application-attack; sid:1000001; rev:2; \
+  metadata:attack_type sql_injection;)
+
+drop http any any -> $HOME_NET any (msg:"IDPS SQL Injection Attempt - OR 1=1"; \
+  flow:established,to_server; \
+  content:"OR"; nocase; http_uri; content:"1=1"; http_uri; distance:0; within:10; \
+  classtype:web-application-attack; sid:1000002; rev:2;)
+
+drop http any any -> $HOME_NET any (msg:"IDPS SQL Injection - Comment Marker"; \
+  flow:established,to_server; \
+  content:"--"; http_uri; content:"'"; http_uri; \
+  classtype:web-application-attack; sid:1000003; rev:2;)
+
+#  XSS Detection
+drop http any any -> $HOME_NET any (msg:"IDPS XSS Attempt - Script Tag"; \
+  flow:established,to_server; \
+  content:"<script"; nocase; http_uri; \
+  classtype:web-application-attack; sid:1000010; rev:2;)
+
+drop http any any -> $HOME_NET any (msg:"IDPS XSS Attempt - Event Handler"; \
+  flow:established,to_server; \
+  pcre:"/on(load|error|click|mouseover)\s*=/iU"; \
+  classtype:web-application-attack; sid:1000011; rev:2;)
+
+drop http any any -> $HOME_NET any (msg:"IDPS XSS Attempt - javascript URI"; \
+  flow:established,to_server; \
+  content:"javascript:"; nocase; http_uri; \
+  classtype:web-application-attack; sid:1000012; rev:2;)
+
+#  Command Injection 
+drop http any any -> $HOME_NET any (msg:"IDPS Command Injection - Semicolon"; \
+  flow:established,to_server; \
+  content:"|3b|"; http_uri; content:"/bin/"; http_uri; distance:0; within:20; \
+  classtype:web-application-attack; sid:1000020; rev:2;)
+
+drop http any any -> $HOME_NET any (msg:"IDPS Command Injection - Pipe"; \
+  flow:established,to_server; \
+  content:"|7c|"; http_uri; content:"/etc/passwd"; http_uri; distance:0; within:30; \
+  classtype:web-application-attack; sid:1000021; rev:2;)
+
+#  Path Traversal 
+drop http any any -> $HOME_NET any (msg:"IDPS Path Traversal Attempt"; \
+  flow:established,to_server; \
+  content:"../"; http_uri; content:"../"; http_uri; distance:0; within:10; \
+  classtype:web-application-attack; sid:1000030; rev:2;)
+
+#  Malware Download Detection 
+drop http any any -> any any (msg:"IDPS Potential PE Download"; \
+  flow:established,to_client; \
+  content:"MZ"; offset:0; depth:2; \
+  classtype:trojan-activity; sid:1000040; rev:1;)
+
+#  DNS Tunneling 
+drop dns any any -> any any (msg:"IDPS DNS Tunneling - Long Query"; \
+  dns.query; content:"."; content:"."; distance:1; within:10; \
+  classtype:policy-violation; sid:1000050; rev:1;)
+
+#  SSH Brute Force 
+drop tcp any any -> $HOME_NET 22 (msg:"IDPS SSH Brute Force Attempt"; \
+  flow:to_server; flags:S; \
+  threshold: type threshold, track by_src, count 5, seconds 10; \
+  classtype:attempted-recon; sid:1000060; rev:1; \
+  metadata:attack_type ssh_brute_force;)
+
+#  Botnet C&C Beaconing 
+# drop tcp any any -> $HOME_NET [80,3001,6667] (msg:"IDPS Botnet C&C Beaconing Attempt"; \
+#   flow:to_server; flags:S; \
+#   threshold: type threshold, track by_src, count 3, seconds 30; \
+#   classtype:trojan-activity; sid:1000070; rev:1; \
+#   metadata:attack_type botnet;)
+
+logs/autodefense.log 16153574
+logs/runtime21_staging/autodefense_daemon.py 24327
+2026-09-08 19:33:23,094 [INFO] Interface: ens33
+2026-09-08 19:33:27,695 [INFO] Model experiment: 20260908_botnet_excluded_v1 | Features: 21
+2026-09-08 19:33:27,946 [INFO] Pipeline: Blacklist → Whitelist(ML) → ML Inference → Auto-Block
+2026-09-08 19:46:10,187 [INFO] SUSPICIOUS: 172.16.1.10 | Type: DoS/DDoS | Score: 0.645 (bin=0.034, multi=0.645, corr=0.000) | Port: 80
+total 0
+lrwxrwxrwx    1 root     root            11 May 22 18:25 access.log -> /dev/stdout
+lrwxrwxrwx    1 root     root            11 May 22 18:25 error.log -> /dev/stderr

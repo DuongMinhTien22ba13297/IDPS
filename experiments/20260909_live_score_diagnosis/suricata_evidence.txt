@@ -1,0 +1,74 @@
+{"tail_time_range": ["2026-09-08T19:33:18.047478+0000", "2026-09-08T19:53:17.047287+0000"], "all_event_types": {"tls": 1, "stats": 150, "flow": 2065, "mdns": 18, "http": 2006, "fileinfo": 4, "ftp": 204}, "kali_event_types": {"flow": 2044, "http": 2006, "fileinfo": 4, "ftp": 204}, "alerts": [], "ftp_command_counts": [["(None, \"['220']\")", 28], ["('USER', \"['331']\")", 76], ["('PASS', \"['530']\")", 76], ["('USER', 'None')", 24]], "flow_examples": [{"timestamp": "2026-09-08T19:42:49.258985+0000", "src_ip": "172.16.1.10", "src_port": 51159, "dest_ip": "239.255.255.250", "dest_port": 3702, "flow": {"pkts_toserver": 1, "pkts_toclient": 0, "bytes_toserver": 649, "bytes_toclient": 0, "start": "2026-09-08T19:42:19.060758+0000", "end": "2026-09-08T19:42:19.060758+0000", "age": 0, "state": "new", "reason": "timeout", "alerted": false}, "tcp": null, "app_proto": "failed"}, {"timestamp": "2026-09-08T19:45:21.553076+0000", "src_ip": "172.16.1.10", "src_port": 53698, "dest_ip": "172.18.0.3", "dest_port": 80, "flow": {"pkts_toserver": 6, "pkts_toclient": 4, "bytes_toserver": 637, "bytes_toclient": 635, "start": "2026-09-08T19:44:18.003748+0000", "end": "2026-09-08T19:44:18.015907+0000", "age": 0, "state": "closed", "reason": "timeout", "alerted": false, "tx_cnt": 1}, "tcp": {"tcp_flags": "1b", "tcp_flags_ts": "1b", "tcp_flags_tc": "1b", "syn": true, "fin": true, "psh": true, "ack": true, "state": "closed", "ts_max_regions": 1, "tc_max_regions": 1}, "app_proto": "http"}, {"timestamp": "2026-09-08T19:45:21.553186+0000", "src_ip": "172.16.1.10", "src_port": 53698, "dest_ip": "172.16.1.2", "dest_port": 80, "flow": {"pkts_toserver": 6, "pkts_toclient": 4, "bytes_toserver": 637, "bytes_toclient": 635, "start": "2026-09-08T19:44:18.003371+0000", "end": "2026-09-08T19:44:18.015884+0000", "age": 0, "state": "closed", "reason": "timeout", "alerted": false, "tx_cnt": 1}, "tcp": {"tcp_flags": "1b", "tcp_flags_ts": "1b", "tcp_flags_tc": "1b", "syn": true, "fin": true, "psh": true, "ack": true, "state": "closed", "ts_max_regions": 1, "tc_max_regions": 1}, "app_proto": "http"}, {"timestamp": "2026-09-08T19:45:24.566257+0000", "src_ip": "172.16.1.10", "src_port": 34206, "dest_ip": "172.18.0.3", "dest_port": 80, "flow": {"pkts_toserver": 3, "pkts_toclient": 3, "bytes_toserver": 437, "bytes_toclient": 206, "start": "2026-09-08T19:44:24.010573+0000", "end": "2026-09-08T19:44:24.018610+0000", "age": 0, "state": "closed", "reason": "timeout", "alerted": false, "tx_cnt": 1}, "tcp": {"tcp_flags": "1e", "tcp_flags_ts": "1a", "tcp_flags_tc": "16", "syn": true, "rst": true, "psh": true, "ack": true, "state": "closed", "ts_max_regions": 1, "tc_max_regions": 1}, "app_proto": "http"}, {"timestamp": "2026-09-08T19:45:24.577333+0000", "src_ip": "172.16.1.10", "src_port": 34152, "dest_ip": "172.16.1.2", "dest_port": 80, "flow": {"pkts_toserver": 3, "pkts_toclient": 3, "bytes_toserver": 437, "bytes_toclient": 206, "start": "2026-09-08T19:44:23.972855+0000", "end": "2026-09-08T19:44:23.980036+0000", "age": 0, "state": "closed", "reason": "timeout", "alerted": false, "tx_cnt": 1}, "tcp": {"tcp_flags": "1e", "tcp_flags_ts": "1a", "tcp_flags_tc": "16", "syn": true, "rst": true, "psh": true, "ack": true, "state": "closed", "ts_max_regions": 1, "tc_max_regions": 1}, "app_proto": "http"}, {"timestamp": "2026-09-08T19:45:24.615998+0000", "src_ip": "172.16.1.10", "src_port": 34256, "dest_ip": "172.16.1.2", "dest_port": 80, "flow": {"pkts_toserver": 3, "pkts_toclient": 3, "bytes_toserver": 437, "bytes_toclient": 206, "start": "2026-09-08T19:44:24.055288+0000", "end": "2026-09-08T19:44:24.066049+0000", "age": 0, "state": "closed", "reason": "timeout", "alerted": false, "tx_cnt": 1}, "tcp": {"tcp_flags": "1e", "tcp_flags_ts": "1a", "tcp_flags_tc": "16", "syn": true, "rst": true, "psh": true, "ack": true, "state": "closed", "ts_max_regions": 1, "tc_max_regions": 1}, "app_proto": "http"}]}
+/etc/suricata/rules/custom/local.rules
+[7 - Suricata-Main] 2026-09-08 19:33:15 Info: exception-policy: master exception-policy set to: auto
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: suricata: Preparing unexpected signal handling
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: conf: Running in live mode, activating unix socket
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: logopenfile: fast output device (regular) initialized: fast.log
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: logopenfile: eve-log output device (regular) initialized: eve.json
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: logopenfile: stats output device (regular) initialized: stats.log
+[7 - Suricata-Main] 2026-09-08 19:33:16 Warning: detect: No rule files match the pattern /var/lib/suricata/rules/suricata.rules
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: detect: 2 rule files processed. 12 rules successfully loaded, 0 rules failed, 0 rules skipped
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: threshold-config: Threshold config parsed: 0 rule(s) found
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: detect: 12 signatures processed. 0 are IP-only rules, 1 are inspecting packet payload, 10 inspect application layer, 0 are decoder event only
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: unix-manager: unix socket '/var/run/suricata/suricata-command.socket'
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: runmodes: ens33: creating 8 threads
+[7 - Suricata-Main] 2026-09-08 19:33:16 Info: runmodes: br-idps: creating 8 threads
+[9 - W#01-ens33] 2026-09-08 19:33:16 Info: ioctl: ens33: MTU 1500
+[17 - W#01-br-idps] 2026-09-08 19:33:16 Info: ioctl: br-idps: MTU 1500
+[7 - Suricata-Main] 2026-09-08 19:33:16 Notice: threads: Threads created -> W: 16 FM: 1 FR: 1   Engine started.
+16-  # more specific is better for alert accuracy and performance
+17-  address-groups:
+18:    HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+19:    #HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+20:    #HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+21:    #HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+22:    #HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+23-
+24:    EXTERNAL_NET: "!$HOME_NET"
+25:    #EXTERNAL_NET: "any"
+26-
+27-    HTTP_SERVERS: "$HOME_NET"
+28-    SMTP_SERVERS: "$HOME_NET"
+29-    SQL_SERVERS: "$HOME_NET"
+30-    DNS_SERVERS: "$HOME_NET"
+31-    TELNET_SERVERS: "$HOME_NET"
+32-    AIM_SERVERS: "$EXTERNAL_NET"
+33-    DC_SERVERS: "$HOME_NET"
+34-    DNP3_SERVER: "$HOME_NET"
+35-    DNP3_CLIENT: "$HOME_NET"
+36-    MODBUS_CLIENT: "$HOME_NET"
+37-    MODBUS_SERVER: "$HOME_NET"
+--
+2326-##
+2327-
+2328:default-rule-path: /var/lib/suricata/rules
+2329-
+2330:rule-files:
+2331-  - /etc/suricata/rules/custom/local.rules
+2332-  - suricata.rules
+2333-
+2334-##
+2335-## Auxiliary configuration files.
+2336-##
+2337-
+2338-classification-file: /etc/suricata/classification.config
+2339-reference-config-file: /etc/suricata/reference.config
+2340-# threshold-file: /etc/suricata/threshold.config
+2341-
+2342-##
+--
+2353-  # List of files with firewall rules. Order matters, files are loaded
+2354-  # in order and rules are applied in that order (per state, see docs)
+2355:  #rule-files:
+2356-  - /etc/suricata/rules/custom/local.rules
+2357-  #  - firewall.rules
+2358-
+2359-##
+2360-## Include other configs
+2361-##
+2362-
+2363-# Includes:  Files included here will be handled as if they were in-lined
+2364-# in this configuration file. Files with relative pathnames will be
+2365-# searched for in the same directory as this configuration file. You may
+2366-# use absolute pathnames too.
+2367-#include:

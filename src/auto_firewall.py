@@ -7,12 +7,17 @@ Chức năng: Tự động hóa iptables để block/unblock IP tấn công.
          - Duplicate check để tránh insert rule trùng
          - Protected IPs không bao giờ bị block
          - Timeout 5s cho mỗi lệnh iptables
+Ngày tạo  : 2026-05-15
+Ngày sửa  : 2026-06-13
+Lí do sửa : Thêm threading.Lock để đảm bảo an toàn đa luồng (thread-safety) khi
+            background thread unblock IP truy cập đồng thời với main thread.
 =============================================================================
 """
 
 import ipaddress
 import logging
 import subprocess
+import threading
 from typing import Optional
 
 logger = logging.getLogger("Autodefense.AutoFirewall")
@@ -33,11 +38,10 @@ class AutoFirewall:
 
     def __init__(self):
         self._blocked_ips: set = set()
+        self._lock = threading.Lock()
         self._sync_from_iptables()
 
-    # -----------------------------------------------------------------
     #  Initialization
-    # -----------------------------------------------------------------
 
     def _sync_from_iptables(self):
         """
@@ -50,13 +54,16 @@ class AutoFirewall:
                 capture_output=True, text=True, timeout=IPTABLES_TIMEOUT
             )
             if result.returncode == 0:
+                new_blocked = set()
                 for line in result.stdout.splitlines():
                     parts = line.split()
                     # Format: num  DROP  all  --  x.x.x.x  0.0.0.0/0
                     if len(parts) >= 5 and parts[1] == "DROP":
                         ip = parts[4]
                         if self._is_valid_ip(ip):
-                            self._blocked_ips.add(ip)
+                            new_blocked.add(ip)
+                with self._lock:
+                    self._blocked_ips = new_blocked
                 logger.info(f"Đồng bộ iptables: {len(self._blocked_ips)} IP đang bị block")
             else:
                 logger.warning(f"Không thể đọc iptables: {result.stderr.strip()}")
@@ -67,9 +74,7 @@ class AutoFirewall:
         except Exception as e:
             logger.error(f"Lỗi sync iptables: {e}")
 
-    # -----------------------------------------------------------------
     #  Validation
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _is_valid_ip(ip: str) -> bool:
@@ -85,9 +90,7 @@ class AutoFirewall:
         """Kiểm tra IP có được bảo vệ (không cho phép block)."""
         return ip in PROTECTED_IPS
 
-    # -----------------------------------------------------------------
     #  Core Operations
-    # -----------------------------------------------------------------
 
     def block_ip(self, src_ip: str, reason: str = "") -> bool:
         """
@@ -112,13 +115,15 @@ class AutoFirewall:
             return False
 
         # Check duplicate (từ cache)
-        if src_ip in self._blocked_ips:
-            logger.debug(f"IP {src_ip} đã bị block trước đó — skip")
-            return False
+        with self._lock:
+            if src_ip in self._blocked_ips:
+                logger.debug(f"IP {src_ip} đã bị block trước đó — skip")
+                return False
 
         # Double-check bằng iptables -C (check rule tồn tại)
         if self._check_rule_exists(src_ip):
-            self._blocked_ips.add(src_ip)  # Sync cache
+            with self._lock:
+                self._blocked_ips.add(src_ip)  # Sync cache
             logger.debug(f"IP {src_ip} đã có rule trong iptables — skip")
             return False
 
@@ -129,7 +134,8 @@ class AutoFirewall:
                 capture_output=True, text=True, timeout=IPTABLES_TIMEOUT
             )
             if result.returncode == 0:
-                self._blocked_ips.add(src_ip)
+                with self._lock:
+                    self._blocked_ips.add(src_ip)
                 logger.info(
                     f"AUTO_BLOCKED: {src_ip} | Lý do: {reason}"
                 )
@@ -162,7 +168,8 @@ class AutoFirewall:
                 capture_output=True, text=True, timeout=IPTABLES_TIMEOUT
             )
             if result.returncode == 0:
-                self._blocked_ips.discard(src_ip)
+                with self._lock:
+                    self._blocked_ips.discard(src_ip)
                 logger.info(f"UNBLOCKED: {src_ip}")
                 return True
             else:
@@ -176,9 +183,7 @@ class AutoFirewall:
             logger.error(f"Lỗi unblock IP {src_ip}: {e}")
             return False
 
-    # -----------------------------------------------------------------
     #  Query methods
-    # -----------------------------------------------------------------
 
     def _check_rule_exists(self, src_ip: str) -> bool:
         """Kiểm tra rule iptables đã tồn tại bằng iptables -C."""
@@ -193,21 +198,25 @@ class AutoFirewall:
 
     def is_blocked(self, src_ip: str) -> bool:
         """Kiểm tra IP có đang bị block không (check cache trước, iptables sau)."""
-        if src_ip in self._blocked_ips:
-            return True
+        with self._lock:
+            if src_ip in self._blocked_ips:
+                return True
         # Fallback: check trực tiếp iptables
         if self._check_rule_exists(src_ip):
-            self._blocked_ips.add(src_ip)
+            with self._lock:
+                self._blocked_ips.add(src_ip)
             return True
         return False
 
     def get_blocked_list(self) -> list:
         """Trả về danh sách IP đang bị block."""
-        return sorted(list(self._blocked_ips))
+        with self._lock:
+            return sorted(list(self._blocked_ips))
 
     def get_blocked_count(self) -> int:
         """Trả về số lượng IP đang bị block."""
-        return len(self._blocked_ips)
+        with self._lock:
+            return len(self._blocked_ips)
 
     def __repr__(self) -> str:
         return f"AutoFirewall(blocked={len(self._blocked_ips)} IPs)"

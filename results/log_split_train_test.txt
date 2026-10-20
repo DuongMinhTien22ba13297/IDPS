@@ -1,0 +1,70 @@
+C:\IDPS> python .\datasets\split_train_test.py
+======================================================================
+  CHIA BỘ DỮ LIỆU CIC-IDS-2017: 80% TRAIN / 20% TEST
+  (Stratified Split theo từng loại tấn công)
+======================================================================
+
+[1/6] Đang đọc file CSV: C:\IDPS\datasets\cic2017_nfs_labeled_57features.csv...
+    → Tổng: 3,351,784 dòng, 66 cột
+
+[2/6] Lọc bỏ các cột định danh (Metadata)...
+    → Giữ lại 57 features + 1 cột Label
+
+[3/6] Loại bỏ dòng lỗi (Inf/NaN) và Trùng lặp (Duplicates)...
+    → Đã loại bỏ 1,901,851 dòng (Lỗi/Trùng lặp)
+    → Còn lại (Unique patterns): 1,449,933 dòng
+
+[4/6] Phân bố Label (Unique) trước khi split:
+    Label                                 Số lượng     Tỷ lệ
+    ───────────────────────────────────────────────────────
+    BENIGN                               1,190,788    82.13%
+    DoS Hulk                               148,748    10.26%
+    DDoS                                    91,046     6.28%
+    DoS GoldenEye                            7,836     0.54%
+    FTP-Patator                              3,919     0.27%
+    SSH-Patator                              2,464     0.17%
+    Web Attack – Brute Force                 1,265     0.09%
+    DoS Slowhttptest                         1,203     0.08%
+    DoS slowloris                            1,138     0.08%
+    Web Attack – XSS                           635     0.04%
+    Botnet                                     599     0.04%
+    PortScan                                   210     0.01%
+    Infiltration                                72     0.00%
+    Web Attack – Sql Injection                   9     0.00%
+    Heartbleed                                   1     0.00%
+    ───────────────────────────────────────────────────────
+    TỔNG                                 1,449,933   100.00%
+
+[5/6] Đang chia Train/Test (80/20) stratified theo Label...
+    [!] Cảnh báo: Loại bỏ các nhãn có ít hơn 2 mẫu (không thể stratify): ['Heartbleed']     
+    → Train: 1,159,945 dòng
+    → Test:  289,987 dòng
+
+[6/6] Đang lưu file CSV...
+    ✓ Train: C:\IDPS\datasets\cic2017_train_80.csv (541.5 MB)
+    ✓ Test:  C:\IDPS\datasets\cic2017_test_20.csv (135.4 MB)
+
+───────────────────────────────────────────────────────────────────────────
+  XÁC NHẬN TỶ LỆ PHÂN BỐ TỪNG LOẠI TẤN CÔNG SAU KHI SPLIT
+───────────────────────────────────────────────────────────────────────────
+  Label                             Train     Test   Train%    Test%
+  ─────────────────────────────────────────────────────────────────
+  BENIGN                          952,630  238,158    80.0%    20.0%
+  Botnet                              479      120    80.0%    20.0%
+  DDoS                             72,837   18,209    80.0%    20.0%
+  DoS GoldenEye                     6,269    1,567    80.0%    20.0%
+  DoS Hulk                        118,998   29,750    80.0%    20.0%
+  DoS Slowhttptest                    962      241    80.0%    20.0%
+  DoS slowloris                       911      227    80.1%    19.9%
+  FTP-Patator                       3,135      784    80.0%    20.0%
+  Infiltration                         58       14    80.6%    19.4%
+  PortScan                            168       42    80.0%    20.0%
+  SSH-Patator                       1,971      493    80.0%    20.0%
+  Web Attack – Brute Force          1,012      253    80.0%    20.0%
+  Web Attack – Sql Injection            7        2    77.8%    22.2%
+  Web Attack – XSS                    508      127    80.0%    20.0%
+
+======================================================================
+  HOÀN TẤT sau 64.6 giây!
+======================================================================
+PS C:\IDPS> 

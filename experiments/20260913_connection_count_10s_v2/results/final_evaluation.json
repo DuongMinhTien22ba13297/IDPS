@@ -1,0 +1,328 @@
+{
+  "experiment_id": "20260913_connection_count_10s_v2",
+  "evaluated_at_utc": "2026-09-13T14:20:38.437160+00:00",
+  "model_family": "xgboost",
+  "final_test_rows": 330125,
+  "final_test_class_counts": {
+    "BENIGN": 237762,
+    "DoS/DDoS": 58735,
+    "PortScan": 31926,
+    "Brute Force": 1277,
+    "Web Attack": 425
+  },
+  "selected_features": [
+    "RST Flag Count",
+    "Bwd Packets/s",
+    "SYN Flag Count",
+    "Total Fwd Packets",
+    "Bwd Packet Length Std",
+    "Down/Up Ratio",
+    "Connection Count 10s",
+    "ACK Flag Count",
+    "Fwd PSH Flags",
+    "Flow Packets/s",
+    "Fwd IAT Min",
+    "Packet Length Mean",
+    "Total Length of Fwd Packets",
+    "Min Packet Length",
+    "Bwd Packet Length Mean",
+    "Total Length of Bwd Packets",
+    "Flow Bytes/s",
+    "PSH Flag Count",
+    "Total Backward Packets",
+    "Flow IAT Std",
+    "Init_Win_bytes_forward"
+  ],
+  "connection_count_contract": {
+    "feature": "Connection Count 10s",
+    "window_ms": 10000,
+    "window_interval": "(t-window, t]",
+    "includes_current_flow": true,
+    "key_columns": [
+      "src_ip",
+      "dst_ip",
+      "dst_port",
+      "protocol"
+    ],
+    "timestamp_column": "bidirectional_first_seen_ms",
+    "causal": true
+  },
+  "binary_component": {
+    "accuracy": 0.9964861794774706,
+    "f1_weighted": 0.996491457612619,
+    "fpr": 0.004365710248063189,
+    "fnr": 0.0013208752422506848,
+    "tn": 236724,
+    "fp": 1038,
+    "fn": 122,
+    "tp": 92241,
+    "confusion_matrix": [
+      [
+        236724,
+        1038
+      ],
+      [
+        122,
+        92241
+      ]
+    ]
+  },
+  "multiclass_component": {
+    "accuracy": 0.9964740628549792,
+    "f1_macro": 0.9917775529360664,
+    "f1_weighted": 0.9964832064304363,
+    "precision_macro": 0.9957654873416425,
+    "recall_macro": 0.9879489416339234,
+    "classification_report": {
+      "BENIGN": {
+        "precision": 0.9994680199788052,
+        "recall": 0.9956384956384956,
+        "f1-score": 0.9975495825019542,
+        "support": 237762.0
+      },
+      "Brute Force": {
+        "precision": 0.9991974317817014,
+        "recall": 0.9749412685982772,
+        "f1-score": 0.9869203329369798,
+        "support": 1277.0
+      },
+      "DoS/DDoS": {
+        "precision": 0.9827658328453108,
+        "recall": 1.0,
+        "f1-score": 0.9913080168776371,
+        "support": 58735.0
+      },
+      "PortScan": {
+        "precision": 0.999811611039593,
+        "recall": 0.9974002380504917,
+        "f1-score": 0.9986044688357507,
+        "support": 31926.0
+      },
+      "Web Attack": {
+        "precision": 0.9975845410628019,
+        "recall": 0.971764705882353,
+        "f1-score": 0.9845053635280095,
+        "support": 425.0
+      },
+      "accuracy": 0.9964740628549792,
+      "macro avg": {
+        "precision": 0.9957654873416425,
+        "recall": 0.9879489416339234,
+        "f1-score": 0.9917775529360664,
+        "support": 330125.0
+      },
+      "weighted avg": {
+        "precision": 0.9965261661575373,
+        "recall": 0.9964740628549792,
+        "f1-score": 0.9964832064304363,
+        "support": 330125.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        236725,
+        1,
+        1029,
+        6,
+        1
+      ],
+      [
+        32,
+        1245,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        58735,
+        0,
+        0
+      ],
+      [
+        82,
+        0,
+        1,
+        31843,
+        0
+      ],
+      [
+        12,
+        0,
+        0,
+        0,
+        413
+      ]
+    ]
+  },
+  "runtime_ml_fusion": {
+    "accuracy": 0.9956652783036728,
+    "f1_macro": 0.975161741653744,
+    "f1_weighted": 0.9956434267073382,
+    "precision_macro": 0.9962078249633585,
+    "recall_macro": 0.9574914809516946,
+    "classification_report": {
+      "BENIGN": {
+        "precision": 0.998300567601987,
+        "recall": 0.9956805545040839,
+        "f1-score": 0.996988839755738,
+        "support": 237762.0
+      },
+      "Brute Force": {
+        "precision": 1.0,
+        "recall": 0.8277212216131559,
+        "f1-score": 0.9057412167952014,
+        "support": 1277.0
+      },
+      "DoS/DDoS": {
+        "precision": 0.982864505764822,
+        "recall": 1.0,
+        "f1-score": 0.9913582122301551,
+        "support": 58735.0
+      },
+      "PortScan": {
+        "precision": 0.9998740514499826,
+        "recall": 0.9946438639353505,
+        "f1-score": 0.9972521001805763,
+        "support": 31926.0
+      },
+      "Web Attack": {
+        "precision": 1.0,
+        "recall": 0.9694117647058823,
+        "f1-score": 0.984468339307049,
+        "support": 425.0
+      },
+      "accuracy": 0.9956652783036728,
+      "macro avg": {
+        "precision": 0.9962078249633585,
+        "recall": 0.9574914809516946,
+        "f1-score": 0.975161741653744,
+        "support": 330125.0
+      },
+      "weighted avg": {
+        "precision": 0.9957151541594023,
+        "recall": 0.9956652783036728,
+        "f1-score": 0.9956434267073382,
+        "support": 330125.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        236735,
+        0,
+        1023,
+        4,
+        0
+      ],
+      [
+        220,
+        1057,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        58735,
+        0,
+        0
+      ],
+      [
+        170,
+        0,
+        1,
+        31755,
+        0
+      ],
+      [
+        13,
+        0,
+        0,
+        0,
+        412
+      ]
+    ],
+    "attack_confusion_matrix": [
+      [
+        236735,
+        1027
+      ],
+      [
+        403,
+        91960
+      ]
+    ],
+    "attack_fpr": 0.004319445495916084,
+    "attack_fnr": 0.004363219037926442,
+    "runtime_threshold": 0.85
+  },
+  "latency": {
+    "binary_predict": {
+      "measurement": "amortized bulk inference; excludes feature extraction, serialization, flow timeout, Suricata and firewall actions",
+      "warmup_runs": 1,
+      "measured_runs": 5,
+      "batch_rows": 330125,
+      "total_seconds_each_run": [
+        0.12085010000009788,
+        0.12014429999544518,
+        0.12211549999483395,
+        0.12128040000243345,
+        0.11848340000142343
+      ],
+      "mean_ms_per_flow": 0.0003652396516436101,
+      "std_ms_per_flow": 4.149695036631472e-06,
+      "median_ms_per_flow": 0.0003660737599397134
+    },
+    "multiclass_predict": {
+      "measurement": "amortized bulk inference; excludes feature extraction, serialization, flow timeout, Suricata and firewall actions",
+      "warmup_runs": 1,
+      "measured_runs": 5,
+      "batch_rows": 330125,
+      "total_seconds_each_run": [
+        0.47039110000332585,
+        0.4762717999983579,
+        0.4701264999966952,
+        0.4641743999964092,
+        0.48446680000051856
+      ],
+      "mean_ms_per_flow": 0.0014330514804969674,
+      "std_ms_per_flow": 2.322345532179264e-05,
+      "median_ms_per_flow": 0.0014248878455231377
+    },
+    "binary_predict_proba": {
+      "measurement": "amortized bulk inference; excludes feature extraction, serialization, flow timeout, Suricata and firewall actions",
+      "warmup_runs": 1,
+      "measured_runs": 5,
+      "batch_rows": 330125,
+      "total_seconds_each_run": [
+        0.1368960000036168,
+        0.1202865999948699,
+        0.12057809999532765,
+        0.14813929999945685,
+        0.12119109999912325
+      ],
+      "mean_ms_per_flow": 0.00039202792881023525,
+      "std_ms_per_flow": 3.818465855338537e-05,
+      "median_ms_per_flow": 0.0003671067020041598
+    },
+    "multiclass_predict_proba": {
+      "measurement": "amortized bulk inference; excludes feature extraction, serialization, flow timeout, Suricata and firewall actions",
+      "warmup_runs": 1,
+      "measured_runs": 5,
+      "batch_rows": 330125,
+      "total_seconds_each_run": [
+        0.45781150000402704,
+        0.4617865000036545,
+        0.47072859999752836,
+        0.47390980000636773,
+        0.4581426000004285
+      ],
+      "mean_ms_per_flow": 0.0014069694812643733,
+      "std_ms_per_flow": 2.245728803439557e-05,
+      "median_ms_per_flow": 0.001398823173051585
+    }
+  },
+  "elapsed_seconds": 80.11665511131287
+}

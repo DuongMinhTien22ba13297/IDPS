@@ -1,0 +1,55 @@
+======================================================================
+BÁO CÁO CUMULATIVE FEATURE IMPORTANCE
+======================================================================
+Rank  | Feature Name                   | Gini Gain  | Cumulative %   
+----------------------------------------------------------------------
+1     | Average Packet Size            | 0.3241     | 32.41         %
+2     | Bwd Packet Length Std          | 0.2140     | 53.81         %
+3     | Max Packet Length              | 0.0755     | 61.36         %
+4     | ACK Flag Count                 | 0.0446     | 65.82         %
+5     | Bwd Packet Length Min          | 0.0410     | 69.92         %
+6     | Total Backward Packets         | 0.0331     | 73.23         %
+7     | Destination Port               | 0.0274     | 75.96         %
+8     | Fwd Packet Length Std          | 0.0272     | 78.69         %
+9     | Init_Win_bytes_backward        | 0.0267     | 81.36         %
+10    | Packet Length Mean             | 0.0202     | 83.38         %
+11    | Packet Length Std              | 0.0199     | 85.37         %
+12    | Fwd IAT Min                    | 0.0152     | 86.88         %
+13    | Flow IAT Mean                  | 0.0144     | 88.32         %
+14    | Init_Win_bytes_forward         | 0.0112     | 89.44         %
+15    | Flow Bytes/s                   | 0.0104     | 90.48         %
+16    | Total Length of Bwd Packets    | 0.0104     | 91.52         %
+17    | URG Flag Count                 | 0.0090     | 92.42         %
+18    | Bwd IAT Std                    | 0.0081     | 93.22         %
+19    | Fwd IAT Mean                   | 0.0058     | 93.80         %
+20    | Total Fwd Packets              | 0.0054     | 94.34         %
+21    | Flow IAT Min                   | 0.0049     | 94.83         %
+22    | PSH Flag Count                 | 0.0047     | 95.30         %
+23    | Fwd IAT Total                  | 0.0044     | 95.74         %
+24    | Fwd Packets/s                  | 0.0043     | 96.18         %
+25    | Flow IAT Max                   | 0.0039     | 96.57         %
+26    | Fwd IAT Max                    | 0.0039     | 96.96         %
+27    | Total Length of Fwd Packets    | 0.0034     | 97.30         %
+28    | Flow Duration                  | 0.0028     | 97.58         %
+29    | Bwd Packet Length Mean         | 0.0025     | 97.83         %
+30    | Fwd Packet Length Max          | 0.0025     | 98.07         %
+31    | Bwd Packets/s                  | 0.0022     | 98.29         %
+32    | Fwd Packet Length Min          | 0.0020     | 98.49         %
+33    | Bwd IAT Min                    | 0.0018     | 98.67         %
+34    | Min Packet Length              | 0.0018     | 98.85         %
+35    | Flow Packets/s                 | 0.0017     | 99.02         %
+36    | Flow IAT Std                   | 0.0017     | 99.19         %
+37    | Bwd IAT Max                    | 0.0013     | 99.31         %
+38    | Bwd Packet Length Max          | 0.0012     | 99.43         %
+39    | FIN Flag Count                 | 0.0010     | 99.53         %
+40    | Down/Up Ratio                  | 0.0010     | 99.63         %
+41    | Bwd IAT Total                  | 0.0010     | 99.73         %
+42    | Fwd PSH Flags                  | 0.0009     | 99.83         %
+43    | Fwd IAT Std                    | 0.0009     | 99.91         %
+44    | Fwd Packet Length Mean         | 0.0008     | 99.99         %
+45    | Bwd IAT Mean                   | 0.0001     | 100.00        %
+46    | SYN Flag Count                 | 0.0000     | 100.00        %
+47    | Packet Length Variance         | 0.0000     | 100.00        %
+48    | RST Flag Count                 | 0.0000     | 100.00        %
+49    | ECE Flag Count                 | 0.0000     | 100.00        %
+50    | CWE Flag Count                 | 0.0000     | 100.00        %

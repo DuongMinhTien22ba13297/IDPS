@@ -1,0 +1,50 @@
+{
+  "experiment_id": "20260908_botnet_excluded_v1",
+  "winner": "xgboost",
+  "params": {
+    "max_depth": 8,
+    "learning_rate": 0.1548103510356626,
+    "n_estimators": 78,
+    "subsample": 0.8547578672082222,
+    "colsample_bytree": 0.6965645209738722
+  },
+  "selected_features": [
+    "Bwd Packets/s",
+    "Max Packet Length",
+    "RST Flag Count",
+    "Bwd Packet Length Std",
+    "Total Fwd Packets",
+    "Down/Up Ratio",
+    "SYN Flag Count",
+    "PSH Flag Count",
+    "Total Length of Fwd Packets",
+    "ACK Flag Count",
+    "Flow IAT Std",
+    "Flow Bytes/s",
+    "Total Length of Bwd Packets",
+    "Fwd IAT Min",
+    "Packet Length Mean",
+    "Fwd PSH Flags",
+    "Total Backward Packets",
+    "Packet Length Std",
+    "Fwd Packet Length Max",
+    "Init_Win_bytes_forward",
+    "Fwd Packet Length Std"
+  ],
+  "classes": [
+    "BENIGN",
+    "Brute Force",
+    "DoS/DDoS",
+    "PortScan",
+    "Web Attack"
+  ],
+  "smote": {
+    "targets": {
+      "Brute Force": 51060,
+      "Web Attack": 16960
+    },
+    "k_neighbors": 5
+  },
+  "random_seed": 42,
+  "runtime_threshold": 0.85
+}

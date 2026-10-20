@@ -1,0 +1,318 @@
+{
+  "log_start": "Starting Autodefense Daemon...",
+  "log_end": "2026-09-08 19:52:38,597 [INFO] Đồng bộ iptables: 0 IP đang bị block",
+  "feature_records": 1371,
+  "actions": {
+    "SUSPICIOUS:": 1
+  },
+  "ports": {
+    "0": {
+      "benign_decisions": 1,
+      "score_min_median_max": [
+        0.001,
+        0.001,
+        0.001
+      ],
+      "examples": [
+        {
+          "time": "2026-09-08 19:44:18,356",
+          "flow": 8,
+          "score": 0.001,
+          "bin": 0.001,
+          "multi": 0.001,
+          "features": {
+            "Bwd Packets/s": 0,
+            "Max Packet Length": 60,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 0,
+            "Total Fwd Packets": 3,
+            "Down/Up Ratio": 0,
+            "SYN Flag Count": 0,
+            "PSH Flag Count": 0,
+            "Total Length of Fwd Packets": 180,
+            "ACK Flag Count": 0,
+            "Flow IAT Std": 327390.4396893715,
+            "Flow Bytes/s": 261.2481857764877,
+            "Total Length of Bwd Packets": 0,
+            "Fwd IAT Min": 113000,
+            "Packet Length Mean": 60,
+            "Fwd PSH Flags": 0,
+            "Total Backward Packets": 0,
+            "Packet Length Std": 0,
+            "Fwd Packet Length Max": 60,
+            "Init_Win_bytes_forward": 0,
+            "Fwd Packet Length Std": 0
+          }
+        },
+        {
+          "time": "2026-09-08 19:44:18,356",
+          "flow": 8,
+          "score": 0.001,
+          "bin": 0.001,
+          "multi": 0.001,
+          "features": {
+            "Bwd Packets/s": 0,
+            "Max Packet Length": 60,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 0,
+            "Total Fwd Packets": 3,
+            "Down/Up Ratio": 0,
+            "SYN Flag Count": 0,
+            "PSH Flag Count": 0,
+            "Total Length of Fwd Packets": 180,
+            "ACK Flag Count": 0,
+            "Flow IAT Std": 327390.4396893715,
+            "Flow Bytes/s": 261.2481857764877,
+            "Total Length of Bwd Packets": 0,
+            "Fwd IAT Min": 113000,
+            "Packet Length Mean": 60,
+            "Fwd PSH Flags": 0,
+            "Total Backward Packets": 0,
+            "Packet Length Std": 0,
+            "Fwd Packet Length Max": 60,
+            "Init_Win_bytes_forward": 0,
+            "Fwd Packet Length Std": 0
+          }
+        }
+      ],
+      "last_probs": {
+        "BENIGN": 0.9986,
+        "Brute_Force": 0,
+        "DoS_DDoS": 0.0014,
+        "PortScan": 0,
+        "Web_Attack": 0
+      }
+    },
+    "21": {
+      "benign_decisions": 28,
+      "score_min_median_max": [
+        0.004,
+        0.036,
+        0.051
+      ],
+      "examples": [
+        {
+          "time": "2026-09-08 19:47:59,503",
+          "flow": 1809,
+          "score": 0.004,
+          "bin": 0.004,
+          "multi": 0.001,
+          "features": {
+            "Bwd Packets/s": 2.3536334215945867,
+            "Max Packet Length": 100,
+            "RST Flag Count": 2,
+            "Bwd Packet Length Std": 13.212548148310704,
+            "Total Fwd Packets": 9,
+            "Down/Up Ratio": 0.8888888888888888,
+            "SYN Flag Count": 2,
+            "PSH Flag Count": 5,
+            "Total Length of Fwd Packets": 613,
+            "ACK Flag Count": 14,
+            "Flow IAT Std": 539588.7284157568,
+            "Flow Bytes/s": 360.4001176816711,
+            "Total Length of Bwd Packets": 612,
+            "Fwd IAT Min": 0,
+            "Packet Length Mean": 72.05882352941177,
+            "Fwd PSH Flags": 2,
+            "Total Backward Packets": 8,
+            "Packet Length Std": 10.842454681916442,
+            "Fwd Packet Length Max": 78,
+            "Init_Win_bytes_forward": 64240,
+            "Fwd Packet Length Std": 6.716480559869962
+          }
+        },
+        {
+          "time": "2026-09-08 19:47:08,361",
+          "flow": 1676,
+          "score": 0.051,
+          "bin": 0.051,
+          "multi": 0.009,
+          "features": {
+            "Bwd Packets/s": 1.9133370849746765,
+            "Max Packet Length": 100,
+            "RST Flag Count": 2,
+            "Bwd Packet Length Std": 15.675946354770645,
+            "Total Fwd Packets": 18,
+            "Down/Up Ratio": 0.9444444444444444,
+            "SYN Flag Count": 2,
+            "PSH Flag Count": 14,
+            "Total Length of Fwd Packets": 1282,
+            "ACK Flag Count": 32,
+            "Flow IAT Std": 742083.2968269736,
+            "Flow Bytes/s": 289.92684299380977,
+            "Total Length of Bwd Packets": 1294,
+            "Fwd IAT Min": 0,
+            "Packet Length Mean": 73.59999999999998,
+            "Fwd PSH Flags": 7,
+            "Total Backward Packets": 17,
+            "Packet Length Std": 11.8723603877439,
+            "Fwd Packet Length Max": 82,
+            "Init_Win_bytes_forward": 64240,
+            "Fwd Packet Length Std": 6.188752183984365
+          }
+        }
+      ],
+      "last_probs": {
+        "BENIGN": 0.9925,
+        "Brute_Force": 0.0062,
+        "DoS_DDoS": 0.0003,
+        "PortScan": 0.0009,
+        "Web_Attack": 0
+      }
+    },
+    "80": {
+      "benign_decisions": 1340,
+      "score_min_median_max": [
+        0,
+        0.001,
+        0.548
+      ],
+      "examples": [
+        {
+          "time": "2026-09-08 19:44:42,074",
+          "flow": 109,
+          "score": 0,
+          "bin": 0,
+          "multi": 0,
+          "features": {
+            "Bwd Packets/s": 0.6628369421122404,
+            "Max Packet Length": 297,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 3.265986323710904,
+            "Total Fwd Packets": 5,
+            "Down/Up Ratio": 1.2,
+            "SYN Flag Count": 2,
+            "PSH Flag Count": 2,
+            "Total Length of Fwd Packets": 599,
+            "ACK Flag Count": 10,
+            "Flow IAT Std": 1925014.389556608,
+            "Flow Bytes/s": 110.80424215642952,
+            "Total Length of Bwd Packets": 404,
+            "Fwd IAT Min": 2000,
+            "Packet Length Mean": 91.18181818181817,
+            "Fwd PSH Flags": 2,
+            "Total Backward Packets": 6,
+            "Packet Length Std": 68.85756048803673,
+            "Fwd Packet Length Max": 297,
+            "Init_Win_bytes_forward": 64240,
+            "Fwd Packet Length Std": 99.81583040780656
+          }
+        },
+        {
+          "time": "2026-09-08 19:44:51,578",
+          "flow": 469,
+          "score": 0.548,
+          "bin": 0.032,
+          "multi": 0.548,
+          "features": {
+            "Bwd Packets/s": 0.49578582052553294,
+            "Max Packet Length": 297,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 4.618802153517007,
+            "Total Fwd Packets": 4,
+            "Down/Up Ratio": 0.75,
+            "SYN Flag Count": 2,
+            "PSH Flag Count": 1,
+            "Total Length of Fwd Packets": 503,
+            "ACK Flag Count": 6,
+            "Flow IAT Std": 2453677.4645417435,
+            "Flow Bytes/s": 117.17071558420095,
+            "Total Length of Bwd Packets": 206,
+            "Fwd IAT Min": 1000,
+            "Packet Length Mean": 101.28571428571429,
+            "Fwd PSH Flags": 1,
+            "Total Backward Packets": 3,
+            "Packet Length Std": 86.38424680020134,
+            "Fwd Packet Length Max": 297,
+            "Init_Win_bytes_forward": 64240,
+            "Fwd Packet Length Std": 114.22893678923919
+          }
+        }
+      ],
+      "last_probs": {
+        "BENIGN": 0.9999,
+        "Brute_Force": 0,
+        "DoS_DDoS": 0,
+        "PortScan": 0,
+        "Web_Attack": 0
+      }
+    },
+    "3702": {
+      "benign_decisions": 1,
+      "score_min_median_max": [
+        0.379,
+        0.379,
+        0.379
+      ],
+      "examples": [
+        {
+          "time": "2026-09-08 19:44:18,378",
+          "flow": 13,
+          "score": 0.379,
+          "bin": 0.184,
+          "multi": 0.379,
+          "features": {
+            "Bwd Packets/s": 0,
+            "Max Packet Length": 649,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 0,
+            "Total Fwd Packets": 1,
+            "Down/Up Ratio": 0,
+            "SYN Flag Count": 0,
+            "PSH Flag Count": 0,
+            "Total Length of Fwd Packets": 649,
+            "ACK Flag Count": 0,
+            "Flow IAT Std": 0,
+            "Flow Bytes/s": 649000,
+            "Total Length of Bwd Packets": 0,
+            "Fwd IAT Min": 0,
+            "Packet Length Mean": 649,
+            "Fwd PSH Flags": 0,
+            "Total Backward Packets": 0,
+            "Packet Length Std": 0,
+            "Fwd Packet Length Max": 649,
+            "Init_Win_bytes_forward": 0,
+            "Fwd Packet Length Std": 0
+          }
+        },
+        {
+          "time": "2026-09-08 19:44:18,378",
+          "flow": 13,
+          "score": 0.379,
+          "bin": 0.184,
+          "multi": 0.379,
+          "features": {
+            "Bwd Packets/s": 0,
+            "Max Packet Length": 649,
+            "RST Flag Count": 0,
+            "Bwd Packet Length Std": 0,
+            "Total Fwd Packets": 1,
+            "Down/Up Ratio": 0,
+            "SYN Flag Count": 0,
+            "PSH Flag Count": 0,
+            "Total Length of Fwd Packets": 649,
+            "ACK Flag Count": 0,
+            "Flow IAT Std": 0,
+            "Flow Bytes/s": 649000,
+            "Total Length of Bwd Packets": 0,
+            "Fwd IAT Min": 0,
+            "Packet Length Mean": 649,
+            "Fwd PSH Flags": 0,
+            "Total Backward Packets": 0,
+            "Packet Length Std": 0,
+            "Fwd Packet Length Max": 649,
+            "Init_Win_bytes_forward": 0,
+            "Fwd Packet Length Std": 0
+          }
+        }
+      ],
+      "last_probs": {
+        "BENIGN": 0.6208,
+        "Brute_Force": 0.0001,
+        "DoS_DDoS": 0.3774,
+        "PortScan": 0.0016,
+        "Web_Attack": 0.0001
+      }
+    }
+  }
+}

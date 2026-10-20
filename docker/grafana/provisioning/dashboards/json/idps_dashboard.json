@@ -97,7 +97,7 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "count_over_time({application=\"idps-autodefense\", src_ip=~\"$src_ip\"} [1m])",
+          "expr": "count_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} [1m])",
           "queryType": "range",
           "refId": "A"
         }
@@ -133,11 +133,11 @@
             "type": "loki",
             "uid": "loki_ds"
           },
-          "expr": "{application=\"idps-autodefense\", src_ip=~\"$src_ip\"}",
+          "expr": "{log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json",
           "refId": "A"
         }
       ],
-      "title": "Live Flow Logs",
+      "title": "Per-Flow ML / Correlation / Decision Records",
       "type": "logs"
     },
     {
@@ -197,7 +197,7 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "topk(10, sum by (src_ip) (count_over_time({application=\"idps-autodefense\"} [5m])))",
+          "expr": "topk(10, sum by (src_ip) (count_over_time({log_type=\"ml_probs\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} [5m])))",
           "queryType": "range",
           "refId": "A"
         }
@@ -233,7 +233,7 @@
             "type": "loki",
             "uid": "loki_ds"
           },
-          "expr": "{application=\"idps-autodefense\", src_ip=~\"$src_ip\"} |~ \"AUTO_BLOCKED|SUSPICIOUS|BLACKLISTED|ERROR|WARNING\"",
+          "expr": "{application=\"idps-autodefense\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} |~ \"AUTO_BLOCKED|WOULD_BLOCK|SUSPICIOUS|BLACKLISTED|ERROR|WARNING\"",
           "refId": "A"
         }
       ],
@@ -323,9 +323,9 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.BENIGN\" | unwrap v [$__interval])",
+          "expr": "last_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json v=\"probs.BENIGN\" | unwrap v [$__range])",
           "legendFormat": "BENIGN",
-          "queryType": "range",
+          "queryType": "instant",
           "refId": "A"
         },
         {
@@ -334,20 +334,9 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Botnet\" | unwrap v [$__interval])",
-          "legendFormat": "Botnet",
-          "queryType": "range",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki_ds"
-          },
-          "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Brute_Force\" | unwrap v [$__interval])",
+          "expr": "last_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json v=\"probs.Brute_Force\" | unwrap v [$__range])",
           "legendFormat": "Brute Force",
-          "queryType": "range",
+          "queryType": "instant",
           "refId": "C"
         },
         {
@@ -356,9 +345,9 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.DoS_DDoS\" | unwrap v [$__interval])",
+          "expr": "last_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json v=\"probs.DoS_DDoS\" | unwrap v [$__range])",
           "legendFormat": "DoS/DDoS",
-          "queryType": "range",
+          "queryType": "instant",
           "refId": "D"
         },
         {
@@ -367,20 +356,9 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Exploitation___Rare\" | unwrap v [$__interval])",
-          "legendFormat": "Exploitation / Rare",
-          "queryType": "range",
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki_ds"
-          },
-          "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.PortScan\" | unwrap v [$__interval])",
+          "expr": "last_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json v=\"probs.PortScan\" | unwrap v [$__range])",
           "legendFormat": "PortScan",
-          "queryType": "range",
+          "queryType": "instant",
           "refId": "F"
         },
         {
@@ -389,13 +367,13 @@
             "uid": "loki_ds"
           },
           "editorMode": "code",
-          "expr": "max_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\"} | json v=\"probs.Web_Attack\" | unwrap v [$__interval])",
+          "expr": "last_over_time({log_type=\"ml_probs\", src_ip=~\"$src_ip\", run_id=~\"$run_id\", dst_port=~\"$dst_port\"} | json v=\"probs.Web_Attack\" | unwrap v [$__range])",
           "legendFormat": "Web Attack",
-          "queryType": "range",
+          "queryType": "instant",
           "refId": "G"
         }
       ],
-      "title": "ML Multi-Class Probabilities",
+      "title": "Latest Per-Flow ML Multi-Class Probabilities",
       "type": "barchart"
     }
   ],
@@ -429,6 +407,42 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "loki", "uid": "loki_ds"},
+        "definition": "label_values(run_id)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Test run",
+        "multi": false,
+        "name": "run_id",
+        "options": [],
+        "query": "label_values(run_id)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "loki", "uid": "loki_ds"},
+        "definition": "label_values(dst_port)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Destination port",
+        "multi": false,
+        "name": "dst_port",
+        "options": [],
+        "query": "label_values(dst_port)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 3,
+        "type": "query"
       }
     ]
   },
@@ -440,6 +454,6 @@
   "timezone": "",
   "title": "Zero-Touch IDPS Overview",
   "uid": "idps_overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

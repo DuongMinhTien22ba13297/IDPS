@@ -1,0 +1,47 @@
+{
+  "experiment_id": "20260913_connection_count_10s_v1",
+  "winner": "xgboost",
+  "params": {
+    "max_depth": 8,
+    "learning_rate": 0.10804635545332622,
+    "n_estimators": 78,
+    "subsample": 0.9975371140198833,
+    "colsample_bytree": 0.8519416923901437
+  },
+  "selected_features": [
+    "RST Flag Count",
+    "Total Length of Bwd Packets",
+    "Total Fwd Packets",
+    "SYN Flag Count",
+    "Bwd Packet Length Std",
+    "Down/Up Ratio",
+    "Bwd Packets/s",
+    "Total Length of Fwd Packets",
+    "Fwd IAT Total",
+    "ACK Flag Count",
+    "Fwd IAT Min",
+    "Bwd Packet Length Mean",
+    "Fwd PSH Flags",
+    "Packet Length Mean",
+    "PSH Flag Count",
+    "Fwd Packet Length Min",
+    "Connection Count 10s",
+    "Fwd Packet Length Max"
+  ],
+  "classes": [
+    "BENIGN",
+    "Brute Force",
+    "DoS/DDoS",
+    "PortScan",
+    "Web Attack"
+  ],
+  "smote": {
+    "targets": {
+      "Brute Force": 51060,
+      "Web Attack": 16960
+    },
+    "k_neighbors": 5
+  },
+  "random_seed": 42,
+  "runtime_threshold": 0.85
+}
